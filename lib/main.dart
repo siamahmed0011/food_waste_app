@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'screens/auth/welcome_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,17 +18,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Food Waste App',
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Firebase Connected'),
-        ),
-        body: const Center(
-          child: Text('Firebase setup successful 🚀'),
-        ),
-      ),
+      home: WelcomeScreen(),
     );
   }
 }
