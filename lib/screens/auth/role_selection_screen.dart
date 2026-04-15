@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'main_dashboard.dart';
+import 'sign_up_screen.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -18,7 +18,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     const primaryDark = Color(0xFF1B4332);
     const titleColor = Color(0xFF12202F);
     const bodyColor = Color(0xFF6B7280);
-    const borderColor = Color(0xFFE7ECE8);
 
     return Scaffold(
       backgroundColor: background,
@@ -28,7 +27,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🔙 Header
               Row(
                 children: [
                   IconButton(
@@ -58,10 +56,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 24),
-
-              // 🧠 Title
               const Text(
                 "Choose your role",
                 style: TextStyle(
@@ -70,9 +65,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   color: titleColor,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               const Text(
                 "Choose how you want to use the platform and continue.",
                 style: TextStyle(
@@ -81,10 +74,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   height: 1.6,
                 ),
               ),
-
               const SizedBox(height: 24),
 
-              // 🟢 Donor Card
               _RoleCard(
                 title: "Donor",
                 subtitle:
@@ -101,13 +92,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
               const SizedBox(height: 16),
 
-              // 🟠 Organization Card
               _RoleCard(
                 title: "Organization",
                 subtitle:
                     "Receive donations and distribute food to people in need.",
                 icon: Icons.apartment_rounded,
-                color: Color(0xFFEF6C00),
+                color: const Color(0xFFEF6C00),
                 isSelected: selectedRole == "organization",
                 onTap: () {
                   setState(() {
@@ -118,23 +108,26 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
               const Spacer(),
 
-              // 🚀 Continue Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                 onPressed: selectedRole == null
-    ? null
-    : () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => MainDashboard(role: selectedRole!),
-          ),
-        );
-      },
+                  onPressed: selectedRole == null
+                      ? null
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SignUpScreen(
+                                role: selectedRole == "organization"
+                                    ? "ngo"
+                                    : "donor",
+                              ),
+                            ),
+                          );
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
-                    disabledBackgroundColor: primary.withOpacity(0.4),
+                    disabledBackgroundColor: primary.withValues(alpha: 0.4),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -158,7 +151,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   }
 }
 
-// 🔹 Role Card Widget
 class _RoleCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -198,7 +190,7 @@ class _RoleCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? color.withOpacity(0.15)
+                  ? color.withValues(alpha: 0.15)
                   : const Color(0x0A000000),
               blurRadius: 14,
               offset: const Offset(0, 6),
@@ -211,7 +203,7 @@ class _RoleCard extends StatelessWidget {
               height: 50,
               width: 50,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(icon, color: color, size: 26),

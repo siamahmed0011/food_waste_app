@@ -1,465 +1,937 @@
 import 'package:flutter/material.dart';
-import 'sign_in_screen.dart';
 import 'role_selection_screen.dart';
+import 'sign_in_screen.dart';
 
-// =========================
-// APP COLORS
-// =========================
-class _AppColors {
-  static const background = Color(0xFFF4F7F1);
-  static const surface = Colors.white;
-  static const primary = Color(0xFF2E7D32);
-  static const primaryDark = Color(0xFF1B4332);
-  static const primarySoft = Color(0xFFE8F5E9);
-  static const orange = Color(0xFFEF6C00);
-  static const orangeSoft = Color(0xFFFFF3E0);
-  static const title = Color(0xFF12202F);
-  static const body = Color(0xFF6B7280);
-  static const border = Color(0xFFE7ECE8);
-  static const pink = Color(0xFFE91E63);
+enum HomeSection {
+  home,
+  about,
+  howItWorks,
+  contact,
 }
 
-// =========================
-// WELCOME SCREEN START
-// =========================
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  HomeSection _selectedSection = HomeSection.home;
+
+  void _changeSection(HomeSection section) {
+    Navigator.pop(context);
+    setState(() {
+      _selectedSection = section;
+    });
+  }
+
+  String _sectionTitle() {
+    switch (_selectedSection) {
+      case HomeSection.home:
+        return 'Food Waste Reduce Platform';
+      case HomeSection.about:
+        return 'About Us';
+      case HomeSection.howItWorks:
+        return 'How It Works';
+      case HomeSection.contact:
+        return 'Contact';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    const background = Color(0xFFF6F7F3);
+    const primary = Color(0xFF2E7D32);
+    const titleColor = Color(0xFF142233);
+
     return Scaffold(
-      backgroundColor: _AppColors.background,
+      backgroundColor: background,
+      drawer: _HomeDrawer(
+        selectedSection: _selectedSection,
+        onSelectSection: _changeSection,
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _TopHeader(),
-                    const SizedBox(height: 18),
-
-                    _HeroSection(
-                      onSignUp: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const RoleSelectionScreen(),
-                          ),
-                        );
-                      },
-                      onSignIn: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SignInScreen(),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    const _SectionTitle(
-                      title: "About the platform",
-                      subtitle:
-                          "Our system connects donors with verified organizations to reduce food waste and ensure that safe surplus food reaches people in need quickly and transparently.",
-                    ),
-                    const SizedBox(height: 18),
-
-                    const _StepCard(
-                      number: "1",
-                      title: "Donor posts surplus food",
-                      description:
-                          "Donors share food details, quantity, location and pickup time from their dashboard.",
-                      icon: Icons.inventory_2_outlined,
-                    ),
-                    const SizedBox(height: 14),
-                    const _StepCard(
-                      number: "2",
-                      title: "NGOs request pickup",
-                      description:
-                          "Nearby organizations browse posts, send pickup requests and receive confirmation in real time.",
-                      icon: Icons.local_shipping_outlined,
-                    ),
-                    const SizedBox(height: 14),
-                    const _StepCard(
-                      number: "3",
-                      title: "Food is collected & served",
-                      description:
-                          "Verified organizations collect the food, transport it safely and serve vulnerable people.",
-                      icon: Icons.volunteer_activism_outlined,
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    const _SectionTitle(
-                      title: "Who can join?",
-                      subtitle:
-                          "Choose your role and start contributing to a cleaner, kinder community.",
-                    ),
-                    const SizedBox(height: 18),
-
-                    const _JoinCard(
-                      title: "For Donors",
-                      description:
-                          "Restaurants, hotels, caterers, households and event organizers who have safe extra food that would otherwise be wasted.",
-                      points: [
-                        "Post surplus food in a few clicks",
-                        "Set expiry and pickup time",
-                        "Track your donation history",
-                      ],
-                      accentColor: _AppColors.primary,
-                      icon: Icons.restaurant_menu_rounded,
-                    ),
-                    const SizedBox(height: 16),
-                    const _JoinCard(
-                      title: "For Organizations",
-                      description:
-                          "NGOs, shelters, orphanages and community kitchens who distribute food to people in need.",
-                      points: [
-                        "View donations near your location",
-                        "Request pickups in real time",
-                        "Maintain pickup records",
-                      ],
-                      accentColor: _AppColors.orange,
-                      icon: Icons.apartment_rounded,
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    const _SectionTitle(
-                      title: "Contact Us",
-                      subtitle:
-                          "Reach out anytime. We are here to help donors, NGOs and volunteers.",
-                    ),
-                    const SizedBox(height: 18),
-
-                    const _ContactCard(),
-
-                    const SizedBox(height: 26),
-
-                    _BottomCta(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const RoleSelectionScreen(),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    const Center(
-                      child: Text(
-                        "© 2026 Food Waste Reduce Management System",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.black45,
-                          fontWeight: FontWeight.w500,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+              child: Row(
+                children: [
+                  Builder(
+                    builder: (context) => InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => Scaffold.of(context).openDrawer(),
+                      child: Container(
+                        height: 46,
+                        width: 46,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        textAlign: TextAlign.center,
+                        child: const Icon(
+                          Icons.menu_rounded,
+                          color: titleColor,
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    height: 46,
+                    width: 46,
+                    decoration: BoxDecoration(
+                      color: primary.withValues(alpha: 0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.eco_rounded,
+                      color: primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _sectionTitle(),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: titleColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: _buildSection(),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
 
-// =========================
-// TOP HEADER SECTION
-// =========================
-class _TopHeader extends StatelessWidget {
-  const _TopHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-      child: Row(
-        children: const [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: _AppColors.primarySoft,
-            child: Icon(
-              Icons.eco_rounded,
-              color: _AppColors.primary,
-              size: 22,
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              "Food Waste Reduce Platform",
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
-                color: _AppColors.primaryDark,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  Widget _buildSection() {
+    switch (_selectedSection) {
+      case HomeSection.home:
+        return const _HomeView(key: ValueKey('home'));
+      case HomeSection.about:
+        return const _AboutView(key: ValueKey('about'));
+      case HomeSection.howItWorks:
+        return const _HowItWorksView(key: ValueKey('how'));
+      case HomeSection.contact:
+        return const _ContactView(key: ValueKey('contact'));
+    }
   }
 }
 
-// =========================
-// HERO SECTION
-// =========================
-class _HeroSection extends StatelessWidget {
-  final VoidCallback onSignUp;
-  final VoidCallback onSignIn;
+class _HomeDrawer extends StatelessWidget {
+  final HomeSection selectedSection;
+  final ValueChanged<HomeSection> onSelectSection;
 
-  const _HeroSection({
-    required this.onSignUp,
-    required this.onSignIn,
+  const _HomeDrawer({
+    required this.selectedSection,
+    required this.onSelectSection,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 24,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: SizedBox(
-          height: 280,
-          width: double.infinity,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.asset(
-                "assets/images/Food.jpg",
-                fit: BoxFit.cover,
-              ),
+    const primary = Color(0xFF2E7D32);
+    const titleColor = Color(0xFF142233);
+    const bodyColor = Color(0xFF6B7280);
 
-              // Full image overlay - lighter than before
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.28),
-                      Colors.black.withOpacity(0.42),
-                      Colors.black.withOpacity(0.52),
-                    ],
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.08),
+              ),
+              child: const Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.eco_rounded,
+                      color: primary,
+                    ),
                   ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Food Waste Reduce Platform',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: titleColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            _DrawerTile(
+              icon: Icons.home_rounded,
+              title: 'Home',
+              selected: selectedSection == HomeSection.home,
+              onTap: () => onSelectSection(HomeSection.home),
+            ),
+            _DrawerTile(
+              icon: Icons.info_outline_rounded,
+              title: 'About Us',
+              selected: selectedSection == HomeSection.about,
+              onTap: () => onSelectSection(HomeSection.about),
+            ),
+            _DrawerTile(
+              icon: Icons.settings_accessibility_rounded,
+              title: 'How It Works',
+              selected: selectedSection == HomeSection.howItWorks,
+              onTap: () => onSelectSection(HomeSection.howItWorks),
+            ),
+            _DrawerTile(
+              icon: Icons.support_agent_rounded,
+              title: 'Contact',
+              selected: selectedSection == HomeSection.contact,
+              onTap: () => onSelectSection(HomeSection.contact),
+            ),
+            const Divider(height: 28),
+            _DrawerTile(
+              icon: Icons.person_add_alt_1_rounded,
+              title: 'Sign Up',
+              selected: false,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RoleSelectionScreen(),
+                  ),
+                );
+              },
+            ),
+            _DrawerTile(
+              icon: Icons.login_rounded,
+              title: 'Sign In',
+              selected: false,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SignInScreen(),
+                  ),
+                );
+              },
+            ),
+            const Spacer(),
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Safe sharing. Fast pickup. Trusted community.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: bodyColor,
+                  fontSize: 12.8,
                 ),
               ),
-
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.16),
-                        borderRadius: BorderRadius.circular(100),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.14),
-                        ),
-                      ),
-                      child: const Text(
-                        "Trusted flow  •  Simple posting  •  Fast pickup",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.8,
-                          fontWeight: FontWeight.w600,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    const SizedBox(
-                      width: 240,
-                      child: Text(
-                        "A meal shared is a smile shared",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                          height: 1.22,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const SizedBox(
-                      width: 285,
-                      child: Text(
-                        "We connect donors with verified NGOs so safe surplus food reaches people in need quickly and responsibly.",
-                        style: TextStyle(
-                          color: Color(0xE6FFFFFF),
-                          fontSize: 13.2,
-                          height: 1.55,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: onSignUp,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF43A047),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Text(
-                              "Sign Up",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: onSignIn,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              backgroundColor: Colors.white.withOpacity(0.08),
-                              side: BorderSide(
-                                color: Colors.white.withOpacity(0.65),
-                                width: 1.1,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Text(
-                              "Sign In",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// =========================
-// COMMON CENTER TITLE SECTION
-// =========================
-class _SectionTitle extends StatelessWidget {
+class _DrawerTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _DrawerTile({
+    required this.icon,
+    required this.title,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const titleColor = Color(0xFF142233);
+    const primary = Color(0xFF2E7D32);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: selected ? primary : titleColor,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: selected ? primary : titleColor,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        tileColor: selected ? primary.withValues(alpha: 0.08) : null,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _HomeView extends StatelessWidget {
+  const _HomeView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const primary = Color(0xFF2E7D32);
+    const titleColor = Color(0xFF142233);
+    const bodyColor = Color(0xFF6B7280);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              image: const DecorationImage(
+                image: AssetImage('assets/images/Food.jpg'),
+                fit: BoxFit.cover,
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x16000000),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: const [
+                      _Badge(text: 'Trusted flow'),
+                      _Badge(text: 'Fast pickup'),
+                      _Badge(text: 'Verified NGOs'),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'A meal shared is a smile shared',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      height: 1.2,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Connect donors with NGOs to reduce food waste efficiently and responsibly.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.5,
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RoleSelectionScreen(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          child: const Text(
+                            'Get Started',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SignInScreen(),
+                              ),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(
+                              color: Colors.white70,
+                              width: 1.2,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          child: const Text(
+                            'Sign In',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          const Center(
+            child: Text(
+              'Quick Overview',
+              style: TextStyle(
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+                color: titleColor,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Center(
+            child: Text(
+              'A simple and trusted process for donors and organizations.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14.5,
+                color: bodyColor,
+                height: 1.7,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          const _FeatureCard(
+            icon: Icons.fastfood_rounded,
+            title: 'Post surplus food',
+            desc: 'Share extra food easily from your dashboard.',
+          ),
+          const SizedBox(height: 14),
+          const _FeatureCard(
+            icon: Icons.local_shipping_rounded,
+            title: 'Request pickups',
+            desc: 'Organizations can request food instantly.',
+          ),
+          const SizedBox(height: 14),
+          const _FeatureCard(
+            icon: Icons.volunteer_activism_rounded,
+            title: 'Serve people',
+            desc: 'Food reaches people in need safely.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AboutView extends StatelessWidget {
+  const _AboutView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const titleColor = Color(0xFF142233);
+    const bodyColor = Color(0xFF6B7280);
+    const primary = Color(0xFF2E7D32);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+      child: Column(
+        children: [
+          const _SectionHeader(
+            title: 'About Us',
+            subtitle:
+                'Food Waste Reduce Platform is built to connect food donors with verified organizations so safe surplus food can reach people in need instead of being wasted.',
+          ),
+          const SizedBox(height: 18),
+          _InfoCard(
+            icon: Icons.flag_rounded,
+            title: 'Our Mission',
+            description:
+                'To reduce food waste by creating a reliable bridge between donors and organizations and ensuring safe food reaches vulnerable communities quickly.',
+            accent: primary,
+          ),
+          const SizedBox(height: 14),
+          _InfoCard(
+            icon: Icons.visibility_rounded,
+            title: 'Our Vision',
+            description:
+                'A community where no safe food is wasted and no hungry person is left behind when support is possible.',
+            accent: const Color(0xFF7B61FF),
+          ),
+          const SizedBox(height: 14),
+          _InfoCard(
+            icon: Icons.verified_user_rounded,
+            title: 'Why Trust Us',
+            description:
+                'We focus on verified organizations, clear pickup flow, responsible sharing and a simple donation process for both sides.',
+            accent: const Color(0xFFEF6C00),
+          ),
+          const SizedBox(height: 22),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0A000000),
+                  blurRadius: 14,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Who we serve',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'We support restaurants, hotels, event organizers, households, NGOs, shelters, orphanages and community kitchens that want to reduce food waste and serve people with dignity.',
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    color: bodyColor,
+                    height: 1.7,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HowItWorksView extends StatelessWidget {
+  const _HowItWorksView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const titleColor = Color(0xFF142233);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+      child: Column(
+        children: [
+          const _SectionHeader(
+            title: 'How It Works',
+            subtitle:
+                'A simple step-by-step process helps donors and organizations work together safely and efficiently.',
+          ),
+          const SizedBox(height: 18),
+          const _StepCard(
+            number: '1',
+            title: 'Donor posts surplus food',
+            description:
+                'A donor adds food details, quantity, pickup time and location from the app.',
+          ),
+          const SizedBox(height: 14),
+          const _StepCard(
+            number: '2',
+            title: 'Organizations browse nearby food',
+            description:
+                'Verified organizations can view available donations and choose suitable pickup opportunities.',
+          ),
+          const SizedBox(height: 14),
+          const _StepCard(
+            number: '3',
+            title: 'Pickup request is sent',
+            description:
+                'The organization sends a pickup request so the donor can review and confirm it.',
+          ),
+          const SizedBox(height: 14),
+          const _StepCard(
+            number: '4',
+            title: 'Food is collected safely',
+            description:
+                'The organization picks up the food and transports it responsibly.',
+          ),
+          const SizedBox(height: 14),
+          const _StepCard(
+            number: '5',
+            title: 'Food reaches people in need',
+            description:
+                'Collected food is distributed to vulnerable people through trusted community support.',
+          ),
+          const SizedBox(height: 22),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F7EC),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Column(
+              children: [
+                Text(
+                  'Key Benefits',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
+                  ),
+                ),
+                SizedBox(height: 12),
+                _BulletText(text: 'Reduces safe food waste'),
+                _BulletText(text: 'Improves community support'),
+                _BulletText(text: 'Creates a transparent donation flow'),
+                _BulletText(text: 'Saves time for both donors and NGOs'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactView extends StatelessWidget {
+  const _ContactView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const titleColor = Color(0xFF142233);
+    const bodyColor = Color(0xFF6B7280);
+    const borderColor = Color(0xFFE7ECE8);
+    const primary = Color(0xFF2E7D32);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+      child: Column(
+        children: [
+          const _SectionHeader(
+            title: 'Contact Us',
+            subtitle:
+                'Reach out anytime. We are here to support donors, NGOs and volunteers.',
+          ),
+          const SizedBox(height: 18),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: borderColor),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0B000000),
+                  blurRadius: 16,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              children: const [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Color(0xFFFCE4EC),
+                  child: Icon(
+                    Icons.support_agent_rounded,
+                    color: Color(0xFFD81B60),
+                    size: 28,
+                  ),
+                ),
+                SizedBox(height: 14),
+                Text(
+                  'Contact Information',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
+                  ),
+                ),
+                SizedBox(height: 18),
+                _ContactTile(
+                  icon: Icons.mail_outline_rounded,
+                  label: 'Email',
+                  value: 'info@foodwastereduceproject.com',
+                ),
+                SizedBox(height: 12),
+                _ContactTile(
+                  icon: Icons.phone_outlined,
+                  label: 'Phone',
+                  value: '+880 01570267657',
+                ),
+                SizedBox(height: 12),
+                _ContactTile(
+                  icon: Icons.location_on_outlined,
+                  label: 'Address',
+                  value: 'Mirpur, Dhaka, Bangladesh',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Column(
+              children: [
+                Text(
+                  'Support Hours',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
+                  ),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'Saturday - Thursday\n9:00 AM - 6:00 PM',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    color: bodyColor,
+                    height: 1.7,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  final String text;
+
+  const _Badge({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _FeatureCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String desc;
+
+  const _FeatureCard({
+    required this.icon,
+    required this.title,
+    required this.desc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const primary = Color(0xFF2E7D32);
+    const titleColor = Color(0xFF142233);
+    const bodyColor = Color(0xFF6B7280);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 56,
+            width: 56,
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(
+              icon,
+              color: primary,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  desc,
+                  style: const TextStyle(
+                    fontSize: 14.2,
+                    color: bodyColor,
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _SectionTitle({
+  const _SectionHeader({
     required this.title,
     required this.subtitle,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Column(
-        children: [
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: _AppColors.title,
-              letterSpacing: -0.2,
-            ),
+    const titleColor = Color(0xFF142233);
+    const bodyColor = Color(0xFF6B7280);
+
+    return Column(
+      children: [
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: titleColor,
           ),
-          const SizedBox(height: 10),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 14.4,
-              height: 1.7,
-              color: _AppColors.body,
-              fontWeight: FontWeight.w400,
-            ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          subtitle,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 14.5,
+            color: bodyColor,
+            height: 1.7,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-// =========================
-// STEP CARD SECTION
-// =========================
-class _StepCard extends StatelessWidget {
-  final String number;
+class _InfoCard extends StatelessWidget {
+  final IconData icon;
   final String title;
   final String description;
-  final IconData icon;
+  final Color accent;
 
-  const _StepCard({
-    required this.number,
+  const _InfoCard({
+    required this.icon,
     required this.title,
     required this.description,
-    required this.icon,
+    required this.accent,
   });
 
   @override
   Widget build(BuildContext context) {
+    const titleColor = Color(0xFF142233);
+    const bodyColor = Color(0xFF6B7280);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _AppColors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _AppColors.border),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 18,
+            color: Color(0x0A000000),
+            blurRadius: 14,
             offset: Offset(0, 6),
           ),
         ],
@@ -468,185 +940,150 @@ class _StepCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            height: 44,
-            width: 44,
+            height: 54,
+            width: 54,
             decoration: BoxDecoration(
-              color: _AppColors.primarySoft,
-              borderRadius: BorderRadius.circular(14),
+              color: accent.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Stack(
-              alignment: Alignment.center,
+            child: Icon(icon, color: accent),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  icon,
-                  size: 18,
-                  color: _AppColors.primary,
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
+                  ),
                 ),
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _AppColors.primary,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      number,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 14.3,
+                    color: bodyColor,
+                    height: 1.7,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15.8,
-                      fontWeight: FontWeight.w800,
-                      color: _AppColors.title,
-                      height: 1.3,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      fontSize: 13.8,
-                      height: 1.65,
-                      color: _AppColors.body,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
-// =========================
-// JOIN CARD SECTION
-// =========================
-class _JoinCard extends StatelessWidget {
+class _StepCard extends StatelessWidget {
+  final String number;
   final String title;
   final String description;
-  final List<String> points;
-  final Color accentColor;
-  final IconData icon;
 
-  const _JoinCard({
+  const _StepCard({
+    required this.number,
     required this.title,
     required this.description,
-    required this.points,
-    required this.accentColor,
-    required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
-    final softColor = accentColor == _AppColors.orange
-        ? _AppColors.orangeSoft
-        : _AppColors.primarySoft;
+    const primary = Color(0xFF2E7D32);
+    const titleColor = Color(0xFF142233);
+    const bodyColor = Color(0xFF6B7280);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _AppColors.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _AppColors.border),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0C000000),
-            blurRadius: 16,
+            color: Color(0x0A000000),
+            blurRadius: 14,
             offset: Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                height: 42,
-                width: 42,
-                decoration: BoxDecoration(
-                  color: softColor,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  icon,
-                  color: accentColor,
-                  size: 20,
-                ),
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: primary,
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: accentColor,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            description,
-            style: const TextStyle(
-              fontSize: 13.8,
-              height: 1.65,
-              color: _AppColors.body,
             ),
           ),
-          const SizedBox(height: 14),
-          ...points.map(
-            (point) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.check_circle_rounded,
-                    size: 18,
-                    color: accentColor,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      point,
-                      style: const TextStyle(
-                        fontSize: 13.8,
-                        height: 1.55,
-                        color: _AppColors.body,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 14.3,
+                    color: bodyColor,
+                    height: 1.7,
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BulletText extends StatelessWidget {
+  final String text;
+
+  const _BulletText({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    const primary = Color(0xFF2E7D32);
+    const bodyColor = Color(0xFF6B7280);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.check_circle_rounded,
+            color: primary,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 14.3,
+                color: bodyColor,
+                height: 1.6,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -656,38 +1093,42 @@ class _JoinCard extends StatelessWidget {
   }
 }
 
-// =========================
-// CONTACT CARD SECTION
-// =========================
-class _ContactCard extends StatelessWidget {
-  const _ContactCard();
+class _ContactTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
 
-  Widget _item(IconData icon, String label, String value) {
+  const _ContactTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const titleColor = Color(0xFF142233);
+    const bodyColor = Color(0xFF6B7280);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAF7),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _AppColors.border),
+        color: const Color(0xFFF9FBF8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE7ECE8)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            height: 38,
-            width: 38,
+            height: 48,
+            width: 48,
             decoration: BoxDecoration(
-              color: _AppColors.primarySoft,
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFEAF5EA),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              icon,
-              color: _AppColors.primary,
-              size: 18,
-            ),
+            child: Icon(icon, color: const Color(0xFF2E7D32)),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -695,8 +1136,8 @@ class _ContactCard extends StatelessWidget {
                 Text(
                   label,
                   style: const TextStyle(
-                    fontSize: 12.5,
-                    color: Colors.black45,
+                    color: bodyColor,
+                    fontSize: 13.2,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -704,156 +1145,12 @@ class _ContactCard extends StatelessWidget {
                 Text(
                   value,
                   style: const TextStyle(
-                    fontSize: 14.2,
-                    color: _AppColors.title,
-                    fontWeight: FontWeight.w600,
-                    height: 1.45,
+                    color: titleColor,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: _AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _AppColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C000000),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            height: 54,
-            width: 54,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFCE4EC),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Icon(
-              Icons.support_agent_rounded,
-              color: _AppColors.pink,
-              size: 28,
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            "Contact Information",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: _AppColors.title,
-            ),
-          ),
-          const SizedBox(height: 18),
-          _item(
-            Icons.email_outlined,
-            "Email",
-            "info@foodwastereduceproject.com",
-          ),
-          _item(
-            Icons.phone_outlined,
-            "Phone",
-            "+880 01570267657",
-          ),
-          _item(
-            Icons.location_on_outlined,
-            "Address",
-            "Mirpur, Dhaka, Bangladesh",
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// =========================
-// BOTTOM CTA SECTION
-// =========================
-class _BottomCta extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const _BottomCta({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFFE8F5E9),
-            Color(0xFFF4F1DE),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          const Text(
-            "Ready to share a meal?",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.w800,
-              color: _AppColors.title,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            "Join our Food Waste Platform and help make sure that no safe food ends up in the bin while people are still hungry.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.7,
-              color: _AppColors.body,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: onPressed,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 28,
-                vertical: 15,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: const Text(
-              "Get Started",
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14.8,
-              ),
             ),
           ),
         ],

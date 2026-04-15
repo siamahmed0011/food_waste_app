@@ -10,7 +10,7 @@ class OrganizationDashboardScreen extends StatelessWidget {
     const background = Color(0xFFF4F7F1);
     const titleColor = Color(0xFF12202F);
     const bodyColor = Color(0xFF6B7280);
-    const borderColor = Color(0xFFE7ECE8);
+  
 
     return Scaffold(
       backgroundColor: background,
