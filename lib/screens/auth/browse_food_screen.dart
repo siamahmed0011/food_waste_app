@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class BrowseFoodScreen extends StatefulWidget {
@@ -27,115 +28,168 @@ class _BrowseFoodScreenState extends State<BrowseFoodScreen> {
     return Scaffold(
       backgroundColor: background,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-          children: [
-            const Text(
-              'Browse Food',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: titleColor,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Find available food donations near your organization.',
-              style: TextStyle(
-                fontSize: 14.5,
-                color: bodyColor,
-              ),
-            ),
-            const SizedBox(height: 16),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('food_posts')
+              .snapshots(),
+          builder: (context, snapshot) {
+            List<QueryDocumentSnapshot> docs = [];
 
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search food, location, donor...',
-                  prefixIcon: Icon(Icons.search_rounded),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 16),
+            if (snapshot.hasData) {
+              docs = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final status = (data['status'] ?? '').toString().toLowerCase();
+                return status == 'available' || status.isEmpty;
+              }).toList();
+            }
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+              children: [
+                const Text(
+                  'Browse Food',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
+                  ),
                 ),
-              ),
-            ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Find available food donations near your organization.',
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    color: bodyColor,
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-            const SizedBox(height: 14),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search food, location, donor...',
+                      prefixIcon: Icon(Icons.search_rounded),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
 
-            SizedBox(
-              height: 42,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: filters.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (context, index) {
-                  final selected = _selectedFilter == index;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedFilter = index;
-                      });
+                const SizedBox(height: 14),
+
+                SizedBox(
+                  height: 42,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: filters.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (context, index) {
+                      final selected = _selectedFilter == index;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedFilter = index;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selected ? primary : Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Text(
+                            filters[index],
+                            style: TextStyle(
+                              color: selected ? Colors.white : titleColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      );
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: selected ? primary : Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                if (snapshot.connectionState == ConnectionState.waiting)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 50),
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (snapshot.hasError)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 50),
+                    child: Center(
                       child: Text(
-                        filters[index],
+                        'Error: ${snapshot.error}',
                         style: TextStyle(
-                          color: selected ? Colors.white : titleColor,
-                          fontWeight: FontWeight.w700,
+                          color: Colors.red.shade400,
+                          fontSize: 14,
                         ),
                       ),
                     ),
-                  );
-                },
-              ),
-            ),
+                  )
+                else if (docs.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 50),
+                    child: Center(
+                      child: Text(
+                        'No food available',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: bodyColor,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  ...docs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
 
-            const SizedBox(height: 18),
+                    final String foodName =
+                        (data['foodName'] ?? 'Unnamed Food').toString();
+                    final String donorName =
+                        (data['donorName'] ?? 'Donor').toString();
+                    final String quantity =
+                        (data['quantity'] ?? 'Not specified').toString();
+                    final String location =
+                        (data['location'] ?? 'Unknown location').toString();
+                    final String pickupTime =
+                        (data['notes'] ?? 'Pickup time not mentioned')
+                            .toString();
+                    final String condition =
+                        (data['condition'] ?? 'Good').toString();
+                    final String category =
+                        (data['category'] ?? 'Food').toString();
 
-            const _FoodCard(
-              foodName: 'Rice, Curry & Chicken',
-              donorName: 'Green Kitchen',
-              quantity: '20 meal packs',
-              location: 'Mirpur, Dhaka',
-              pickupTime: 'Pickup before 6:00 PM',
-              condition: 'Fresh',
-              category: 'Cooked Food',
-              isUrgent: true,
-            ),
-            const SizedBox(height: 14),
-            const _FoodCard(
-              foodName: 'Bread & Bakery Items',
-              donorName: 'Daily Bakery',
-              quantity: '15 boxes',
-              location: 'Dhanmondi, Dhaka',
-              pickupTime: 'Pickup at 5:30 PM',
-              condition: 'Packed',
-              category: 'Bakery',
-              isUrgent: false,
-            ),
-            const SizedBox(height: 14),
-            const _FoodCard(
-              foodName: 'Bananas & Apples',
-              donorName: 'Fresh Mart',
-              quantity: '10 cartons',
-              location: 'Uttara, Dhaka',
-              pickupTime: 'Pickup tomorrow 9:00 AM',
-              condition: 'Fresh',
-              category: 'Fruits',
-              isUrgent: false,
-            ),
-          ],
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: _FoodCard(
+                        docId: doc.id,
+                        foodName: foodName,
+                        donorName: donorName,
+                        quantity: quantity,
+                        location: location,
+                        pickupTime: pickupTime,
+                        condition: condition,
+                        category: category,
+                        isUrgent: false,
+                      ),
+                    );
+                  }),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -143,6 +197,7 @@ class _BrowseFoodScreenState extends State<BrowseFoodScreen> {
 }
 
 class _FoodCard extends StatelessWidget {
+  final String docId;
   final String foodName;
   final String donorName;
   final String quantity;
@@ -153,6 +208,7 @@ class _FoodCard extends StatelessWidget {
   final bool isUrgent;
 
   const _FoodCard({
+    required this.docId,
     required this.foodName,
     required this.donorName,
     required this.quantity,
@@ -283,7 +339,15 @@ class _FoodCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    await FirebaseFirestore.instance.collection('requests').add({
+                      'foodPostId': docId,
+                      'status': 'pending',
+                      'createdAt': Timestamp.now(),
+                    });
+
+                    if (!context.mounted) return;
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Pickup request sent'),

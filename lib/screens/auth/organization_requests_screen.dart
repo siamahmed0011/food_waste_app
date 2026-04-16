@@ -54,7 +54,7 @@ class _OrganizationRequestsScreenState
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: tabs.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
+               separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
                   final selected = selectedTab == index;
                   return GestureDetector(

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class CreateFoodScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
   String? _selectedCondition;
   DateTime? _pickupDate;
   TimeOfDay? _pickupTime;
+  bool _isPublishing = false;
 
   final List<String> _categories = [
     'Cooked Food',
@@ -55,6 +57,8 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
       lastDate: DateTime(now.year + 2),
     );
 
+    if (!context.mounted) return;
+
     if (picked != null) {
       setState(() {
         _pickupDate = picked;
@@ -68,6 +72,8 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
       initialTime: TimeOfDay.now(),
     );
 
+    if (!context.mounted) return;
+
     if (picked != null) {
       setState(() {
         _pickupTime = picked;
@@ -75,7 +81,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
     }
   }
 
-  void _publishPost() {
+  Future<void> _publishPost() async {
     if (_foodNameController.text.trim().isEmpty ||
         _quantityController.text.trim().isEmpty ||
         _locationController.text.trim().isEmpty ||
@@ -91,13 +97,51 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Food post published successfully'),
-      ),
-    );
+    setState(() {
+      _isPublishing = true;
+    });
 
-    Navigator.pop(context);
+    try {
+      await FirebaseFirestore.instance.collection('food_posts').add({
+        'foodName': _foodNameController.text.trim(),
+        'quantity': _quantityController.text.trim(),
+        'serves': _servesController.text.trim(),
+        'location': _locationController.text.trim(),
+        'expiry': _expiryController.text.trim(),
+        'notes': _notesController.text.trim(),
+        'category': _selectedCategory,
+        'condition': _selectedCondition,
+        'pickupDate': _formattedDate(),
+        'pickupTime': _formattedTime(),
+        'status': 'available',
+        'createdAt': Timestamp.now(),
+        'donorName': 'Donor',
+      });
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Food post published successfully'),
+        ),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+        ),
+      );
+    } finally {
+      if (context.mounted) {
+        setState(() {
+          _isPublishing = false;
+        });
+      }
+    }
   }
 
   String _formattedDate() {
@@ -107,7 +151,8 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
 
   String _formattedTime() {
     if (_pickupTime == null) return 'Select pickup time';
-    final hour = _pickupTime!.hourOfPeriod == 0 ? 12 : _pickupTime!.hourOfPeriod;
+    final hour =
+        _pickupTime!.hourOfPeriod == 0 ? 12 : _pickupTime!.hourOfPeriod;
     final minute = _pickupTime!.minute.toString().padLeft(2, '0');
     final period = _pickupTime!.period == DayPeriod.am ? 'AM' : 'PM';
     return '$hour:$minute $period';
@@ -338,7 +383,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _publishPost,
+                  onPressed: _isPublishing ? null : _publishPost,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
                     foregroundColor: Colors.white,
@@ -348,13 +393,23 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                       borderRadius: BorderRadius.circular(18),
                     ),
                   ),
-                  child: const Text(
-                    'Publish Post',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  child: _isPublishing
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Publish Post',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -428,9 +483,7 @@ class _InputField extends StatelessWidget {
             ),
             filled: true,
             fillColor: fieldBg,
-            prefixIcon: maxLines == 1
-                ? Icon(icon, color: bodyColor)
-                : null,
+            prefixIcon: maxLines == 1 ? Icon(icon, color: bodyColor) : null,
             contentPadding: EdgeInsets.symmetric(
               horizontal: 14,
               vertical: maxLines == 1 ? 16 : 18,
@@ -523,6 +576,7 @@ class _DropdownField extends StatelessWidget {
     );
   }
 }
+
 class _PickerCard extends StatelessWidget {
   final String label;
   final String value;
