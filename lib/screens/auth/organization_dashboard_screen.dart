@@ -25,7 +25,7 @@ class _OrganizationDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFFF57C00);
+    const Color primary = Color(0xFF1565C0);
     const Color background = Color(0xFFF6F7F9);
 
     return Scaffold(
@@ -76,7 +76,7 @@ class _OrganizationHomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFFF57C00);
+    const Color primary = Color(0xFF1565C0);
     const Color titleColor = Color(0xFF1D2939);
     const Color bodyColor = Color(0xFF6B7280);
 
@@ -90,7 +90,7 @@ class _OrganizationHomeTab extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 26,
-                  backgroundColor: const Color(0xFFFFF1E4),
+                  backgroundColor: const Color(0xFFE8F1FD),
                   child: Icon(
                     Icons.apartment_rounded,
                     color: primary.withValues(alpha: 0.95),
@@ -150,9 +150,9 @@ class _OrganizationHomeTab extends StatelessWidget {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _OrgStatItem(value: '12', label: 'Available'),
-                  _OrgStatItem(value: '4', label: 'Requests'),
-                  _OrgStatItem(value: '8', label: 'Collected'),
+                  _OrgStatItem(value: '0', label: 'Available'),
+                  _OrgStatItem(value: '0', label: 'Requests'),
+                  _OrgStatItem(value: '0', label: 'Collected'),
                 ],
               ),
             ),
@@ -214,13 +214,10 @@ class _OrganizationHomeTab extends StatelessWidget {
                     height: 52,
                     width: 52,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF1E4),
+                      color: const Color(0xFFE8F1FD),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
-                      Icons.fastfood_outlined,
-                      color: primary,
-                    ),
+                    child: const Icon(Icons.fastfood_outlined, color: primary),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -228,7 +225,7 @@ class _OrganizationHomeTab extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '20 meal packs available nearby',
+                          'No nearby donation yet',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 15,
@@ -237,11 +234,8 @@ class _OrganizationHomeTab extends StatelessWidget {
                         ),
                         SizedBox(height: 5),
                         Text(
-                          'Rice, Curry • Mirpur • Pickup before 6 PM',
-                          style: TextStyle(
-                            color: bodyColor,
-                            fontSize: 13.5,
-                          ),
+                          'When donors post food near your area, it will appear here.',
+                          style: TextStyle(color: bodyColor, fontSize: 13.5),
                         ),
                       ],
                     ),
@@ -252,13 +246,13 @@ class _OrganizationHomeTab extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF4D8),
+                      color: const Color(0xFFE8F1FD),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: const Text(
-                      'Urgent',
+                      'New',
                       style: TextStyle(
-                        color: Color(0xFF9A6700),
+                        color: primary,
                         fontWeight: FontWeight.w700,
                         fontSize: 12.5,
                       ),
@@ -278,16 +272,9 @@ class _OrganizationHomeTab extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const _OrgActivityTile(
-              title: 'Pickup confirmed',
-              subtitle: 'Restaurant donation confirmed for collection',
-            ),
-            const _OrgActivityTile(
-              title: 'New donation nearby',
-              subtitle: 'A donor posted 15 meal boxes near your area',
-            ),
-            const _OrgActivityTile(
-              title: 'Request submitted',
-              subtitle: 'You requested pickup for bakery surplus food',
+              title: 'No recent activity',
+              subtitle:
+                  'Your recent requests and collections will appear here.',
             ),
           ],
         ),
@@ -320,21 +307,25 @@ class _OrganizationProfileTab extends StatefulWidget {
 
 class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
   Map<String, String> profileData = {
-    'name': 'Hope Foundation',
-    'email': 'hopefoundation@gmail.com',
-    'phone': '+880 1712-345678',
-    'website': 'www.hopefoundation.org',
-    'address': 'House 12, Road 5, Mirpur DOHS, Dhaka',
-    'serviceArea': 'Mirpur, Dhanmondi, Mohammadpur, Uttara',
-    'about':
-        'We collect extra food from restaurants, events and donors, then distribute it to people in need through our volunteer network.',
-    'hours': 'Everyday • 9:00 AM to 9:00 PM',
-    'pickup': 'Own transport available for same-day collection',
+    'name': '',
+    'email': '',
+    'phone': '',
+    'website': '',
+    'address': '',
+    'serviceArea': '',
+    'about': '',
+    'hours': '',
+    'pickup': '',
   };
+
+  String _displayValue(String key) {
+    final value = (profileData[key] ?? '').trim();
+    return value.isEmpty ? 'Not added yet' : value;
+  }
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFFF57C00);
+    const Color primary = Color(0xFF1565C0);
     const Color titleColor = Color(0xFF1D2939);
     const Color bodyColor = Color(0xFF6B7280);
     const Color background = Color(0xFFF6F7F9);
@@ -358,10 +349,7 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
               const SizedBox(height: 6),
               const Text(
                 'Manage your NGO details, contact information and service area.',
-                style: TextStyle(
-                  fontSize: 14.5,
-                  color: bodyColor,
-                ),
+                style: TextStyle(fontSize: 14.5, color: bodyColor),
               ),
               const SizedBox(height: 18),
               Container(
@@ -382,7 +370,7 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                   children: [
                     const CircleAvatar(
                       radius: 42,
-                      backgroundColor: Color(0xFFFFF1E4),
+                      backgroundColor: Color(0xFFE8F1FD),
                       child: Icon(
                         Icons.apartment_rounded,
                         size: 42,
@@ -391,7 +379,9 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      profileData['name'] ?? '',
+                      (profileData['name'] ?? '').trim().isEmpty
+                          ? 'Organization Name'
+                          : profileData['name']!.trim(),
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -405,7 +395,7 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                         vertical: 7,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF1E4),
+                        color: const Color(0xFFE8F1FD),
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: const Row(
@@ -418,7 +408,7 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                           ),
                           SizedBox(width: 6),
                           Text(
-                            'Verified Organization',
+                            'Organization Account',
                             style: TextStyle(
                               color: primary,
                               fontWeight: FontWeight.w700,
@@ -430,7 +420,9 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      profileData['about'] ?? '',
+                      (profileData['about'] ?? '').trim().isEmpty
+                          ? 'No description added yet'
+                          : profileData['about']!.trim(),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: bodyColor,
@@ -443,15 +435,17 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () async {
-                          final result = await Navigator.push<Map<String, String>>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => EditOrganizationProfileScreen(
-                                initialData: profileData,
-                              ),
-                            ),
-                          );
-if (!context.mounted) return;
+                          final result =
+                              await Navigator.push<Map<String, String>>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => EditOrganizationProfileScreen(
+                                    initialData: profileData,
+                                  ),
+                                ),
+                              );
+
+                          if (!context.mounted) return;
 
                           if (result != null) {
                             setState(() {
@@ -459,9 +453,16 @@ if (!context.mounted) return;
                             });
 
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text('Profile updated successfully'),
+                              SnackBar(
+                                backgroundColor: primary,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                content: const Text(
+                                  'Profile updated successfully',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
                               ),
                             );
                           }
@@ -470,8 +471,7 @@ if (!context.mounted) return;
                           backgroundColor: primary,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -491,7 +491,7 @@ if (!context.mounted) return;
                 children: const [
                   Expanded(
                     child: _OrgInfoStatCard(
-                      value: '128',
+                      value: '0',
                       label: 'Collected',
                       icon: Icons.inventory_2_outlined,
                     ),
@@ -499,7 +499,7 @@ if (!context.mounted) return;
                   SizedBox(width: 12),
                   Expanded(
                     child: _OrgInfoStatCard(
-                      value: '34',
+                      value: '0',
                       label: 'Active Requests',
                       icon: Icons.assignment_outlined,
                     ),
@@ -514,19 +514,19 @@ if (!context.mounted) return;
                   _ProfileInfoTile(
                     icon: Icons.email_outlined,
                     title: 'Email',
-                    value: profileData['email'] ?? '',
+                    value: _displayValue('email'),
                   ),
                   const _ProfileDivider(),
                   _ProfileInfoTile(
                     icon: Icons.call_outlined,
                     title: 'Phone',
-                    value: profileData['phone'] ?? '',
+                    value: _displayValue('phone'),
                   ),
                   const _ProfileDivider(),
                   _ProfileInfoTile(
                     icon: Icons.language_outlined,
                     title: 'Website',
-                    value: profileData['website'] ?? '',
+                    value: _displayValue('website'),
                   ),
                 ],
               ),
@@ -538,13 +538,13 @@ if (!context.mounted) return;
                   _ProfileInfoTile(
                     icon: Icons.location_on_outlined,
                     title: 'Address',
-                    value: profileData['address'] ?? '',
+                    value: _displayValue('address'),
                   ),
                   const _ProfileDivider(),
                   _ProfileInfoTile(
                     icon: Icons.map_outlined,
                     title: 'Service Area',
-                    value: profileData['serviceArea'] ?? '',
+                    value: _displayValue('serviceArea'),
                   ),
                 ],
               ),
@@ -556,19 +556,19 @@ if (!context.mounted) return;
                   _ProfileInfoTile(
                     icon: Icons.info_outline_rounded,
                     title: 'About',
-                    value: profileData['about'] ?? '',
+                    value: _displayValue('about'),
                   ),
                   const _ProfileDivider(),
                   _ProfileInfoTile(
                     icon: Icons.access_time_outlined,
                     title: 'Operating Hours',
-                    value: profileData['hours'] ?? '',
+                    value: _displayValue('hours'),
                   ),
                   const _ProfileDivider(),
                   _ProfileInfoTile(
                     icon: Icons.local_shipping_outlined,
                     title: 'Pickup Capability',
-                    value: profileData['pickup'] ?? '',
+                    value: _displayValue('pickup'),
                   ),
                 ],
               ),
@@ -620,7 +620,7 @@ class _OrgInfoStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFFF57C00);
+    const Color primary = Color(0xFF1565C0);
     const Color titleColor = Color(0xFF1D2939);
     const Color bodyColor = Color(0xFF6B7280);
 
@@ -650,13 +650,7 @@ class _OrgInfoStatCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: bodyColor,
-              fontSize: 13.5,
-            ),
-          ),
+          Text(label, style: const TextStyle(color: bodyColor, fontSize: 13.5)),
         ],
       ),
     );
@@ -718,7 +712,7 @@ class _ProfileInfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFFF57C00);
+    const Color primary = Color(0xFF1565C0);
     const Color titleColor = Color(0xFF1D2939);
     const Color bodyColor = Color(0xFF6B7280);
 
@@ -731,7 +725,7 @@ class _ProfileInfoTile extends StatelessWidget {
             height: 42,
             width: 42,
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF1E4),
+              color: const Color(0xFFE8F1FD),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: primary, size: 21),
@@ -782,41 +776,31 @@ class _SettingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFFF57C00);
+    const Color primary = Color(0xFF1565C0);
     const Color titleColor = Color(0xFF1D2939);
     const Color bodyColor = Color(0xFF6B7280);
 
     return ListTile(
       onTap: onTap,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       leading: Container(
         height: 42,
         width: 42,
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF1E4),
+          color: const Color(0xFFE8F1FD),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Icon(icon, color: primary),
       ),
       title: Text(
         title,
-        style: const TextStyle(
-          fontWeight: FontWeight.w800,
-          color: titleColor,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.w800, color: titleColor),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(
-          color: bodyColor,
-          fontSize: 13,
-        ),
+        style: const TextStyle(color: bodyColor, fontSize: 13),
       ),
-      trailing: const Icon(
-        Icons.chevron_right_rounded,
-        color: bodyColor,
-      ),
+      trailing: const Icon(Icons.chevron_right_rounded, color: bodyColor),
     );
   }
 }
@@ -826,11 +810,7 @@ class _ProfileDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(
-      height: 1,
-      thickness: 1,
-      color: Color(0xFFF1F1F1),
-    );
+    return const Divider(height: 1, thickness: 1, color: Color(0xFFF1F1F1));
   }
 }
 
@@ -838,10 +818,7 @@ class _OrgStatItem extends StatelessWidget {
   final String value;
   final String label;
 
-  const _OrgStatItem({
-    required this.value,
-    required this.label,
-  });
+  const _OrgStatItem({required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -884,7 +861,7 @@ class _OrgQuickActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     const Color titleColor = Color(0xFF1D2939);
     const Color bodyColor = Color(0xFF6B7280);
-    const Color primary = Color(0xFFF57C00);
+    const Color primary = Color(0xFF1565C0);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -915,10 +892,7 @@ class _OrgQuickActionCard extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: bodyColor,
-            ),
+            style: const TextStyle(fontSize: 12.5, color: bodyColor),
           ),
         ],
       ),
@@ -930,14 +904,11 @@ class _OrgActivityTile extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _OrgActivityTile({
-    required this.title,
-    required this.subtitle,
-  });
+  const _OrgActivityTile({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFFF57C00);
+    const Color primary = Color(0xFF1565C0);
     const Color titleColor = Color(0xFF1D2939);
     const Color bodyColor = Color(0xFF6B7280);
 
@@ -947,7 +918,7 @@ class _OrgActivityTile extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor: const Color(0xFFFFF1E4),
+            backgroundColor: const Color(0xFFE8F1FD),
             child: Icon(
               Icons.local_shipping_outlined,
               color: primary.withValues(alpha: 0.95),
@@ -970,10 +941,7 @@ class _OrgActivityTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: bodyColor,
-                    fontSize: 13.5,
-                  ),
+                  style: const TextStyle(color: bodyColor, fontSize: 13.5),
                 ),
               ],
             ),
@@ -999,7 +967,7 @@ class _OrgSimpleTabWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     const Color titleColor = Color(0xFF1D2939);
     const Color bodyColor = Color(0xFF6B7280);
-    const Color primary = Color(0xFFF57C00);
+    const Color primary = Color(0xFF1565C0);
 
     return SafeArea(
       child: Center(
@@ -1017,7 +985,7 @@ class _OrgSimpleTabWrapper extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundColor: const Color(0xFFFFF1E4),
+                  backgroundColor: const Color(0xFFE8F1FD),
                   child: Icon(icon, color: primary, size: 30),
                 ),
                 const SizedBox(height: 16),
