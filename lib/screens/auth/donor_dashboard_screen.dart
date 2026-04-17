@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'create_food_screen.dart';
+import 'donor_profile_screen.dart';
 
 class DonorDashboardScreen extends StatefulWidget {
   const DonorDashboardScreen({super.key});
@@ -16,7 +17,7 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
     _MyPostsTab(),
     _RequestsTab(),
     _HistoryTab(),
-    _ProfileTab(),
+    DonorProfileScreen(),
   ];
 
   @override
@@ -30,15 +31,11 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: primary,
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const CreateFoodScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const CreateFoodScreen()),
           );
         },
         child: const Icon(Icons.add, color: Colors.white, size: 30),
@@ -171,6 +168,63 @@ class _DonorHomeTab extends StatelessWidget {
             ),
 
             const SizedBox(height: 22),
+            const SizedBox(height: 16),
+
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DonorProfileScreen()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Color(0xFFFFE5E5),
+                      child: Icon(Icons.person, color: Colors.red),
+                    ),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'My Profile',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'View and update your profile details',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios, size: 18),
+                  ],
+                ),
+              ),
+            ),
 
             const Text(
               'Quick Actions',
@@ -244,10 +298,7 @@ class _DonorHomeTab extends StatelessWidget {
                       color: const Color(0xFFE9F6EA),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
-                      Icons.handshake_outlined,
-                      color: primary,
-                    ),
+                    child: const Icon(Icons.handshake_outlined, color: primary),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -265,10 +316,7 @@ class _DonorHomeTab extends StatelessWidget {
                         SizedBox(height: 5),
                         Text(
                           'Rice, Curry • 20 meal packs • Mirpur',
-                          style: TextStyle(
-                            color: bodyColor,
-                            fontSize: 13.5,
-                          ),
+                          style: TextStyle(color: bodyColor, fontSize: 13.5),
                         ),
                       ],
                     ),
@@ -397,10 +445,7 @@ class _RequestsTab extends StatelessWidget {
           const SizedBox(height: 6),
           const Text(
             'Organizations interested in your food posts.',
-            style: TextStyle(
-              fontSize: 14.5,
-              color: bodyColor,
-            ),
+            style: TextStyle(fontSize: 14.5, color: bodyColor),
           ),
           const SizedBox(height: 18),
           _RequestCard(
@@ -462,10 +507,7 @@ class _StatItem extends StatelessWidget {
   final String value;
   final String label;
 
-  const _StatItem({
-    required this.value,
-    required this.label,
-  });
+  const _StatItem({required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -543,10 +585,7 @@ class _QuickActionCard extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12.5,
-                color: bodyColor,
-              ),
+              style: const TextStyle(fontSize: 12.5, color: bodyColor),
             ),
           ],
         ),
@@ -559,10 +598,7 @@ class _ActivityTile extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _ActivityTile({
-    required this.title,
-    required this.subtitle,
-  });
+  const _ActivityTile({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -599,10 +635,7 @@ class _ActivityTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: bodyColor,
-                    fontSize: 13.5,
-                  ),
+                  style: const TextStyle(color: bodyColor, fontSize: 13.5),
                 ),
               ],
             ),
@@ -698,10 +731,7 @@ class _RequestCard extends StatelessWidget {
           const SizedBox(height: 12),
           const Text(
             'Pickup Request',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: titleColor,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w700, color: titleColor),
           ),
           const SizedBox(height: 4),
           Text(
