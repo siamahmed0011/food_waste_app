@@ -30,12 +30,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
     'Packaged Food',
   ];
 
-  final List<String> _conditions = [
-    'Fresh',
-    'Warm',
-    'Packed',
-    'Refrigerated',
-  ];
+  final List<String> _conditions = ['Fresh', 'Warm', 'Packed', 'Refrigerated'];
 
   @override
   void dispose() {
@@ -90,9 +85,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
         _pickupDate == null ||
         _pickupTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all important fields'),
-        ),
+        const SnackBar(content: Text('Please fill all important fields')),
       );
       return;
     }
@@ -121,20 +114,16 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Food post published successfully'),
-        ),
+        const SnackBar(content: Text('Food post published successfully')),
       );
 
       Navigator.pop(context);
     } catch (e) {
       if (!context.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (context.mounted) {
         setState(() {
@@ -151,8 +140,9 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
 
   String _formattedTime() {
     if (_pickupTime == null) return 'Select pickup time';
-    final hour =
-        _pickupTime!.hourOfPeriod == 0 ? 12 : _pickupTime!.hourOfPeriod;
+    final hour = _pickupTime!.hourOfPeriod == 0
+        ? 12
+        : _pickupTime!.hourOfPeriod;
     final minute = _pickupTime!.minute.toString().padLeft(2, '0');
     final period = _pickupTime!.period == DayPeriod.am ? 'AM' : 'PM';
     return '$hour:$minute $period';
@@ -206,11 +196,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
               const SizedBox(height: 8),
               const Text(
                 'Share food details so nearby organizations can request pickup.',
-                style: TextStyle(
-                  fontSize: 14.5,
-                  color: bodyColor,
-                  height: 1.6,
-                ),
+                style: TextStyle(fontSize: 14.5, color: bodyColor, height: 1.6),
               ),
               const SizedBox(height: 22),
 
@@ -359,20 +345,14 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                     const SizedBox(height: 6),
                     Text(
                       '${_selectedCategory ?? "Category"} • ${_quantityController.text.trim().isEmpty ? "Quantity" : _quantityController.text.trim()}',
-                      style: const TextStyle(
-                        color: bodyColor,
-                        fontSize: 13.5,
-                      ),
+                      style: const TextStyle(color: bodyColor, fontSize: 13.5),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _locationController.text.trim().isEmpty
                           ? 'Pickup location'
                           : _locationController.text.trim(),
-                      style: const TextStyle(
-                        color: bodyColor,
-                        fontSize: 13.5,
-                      ),
+                      style: const TextStyle(color: bodyColor, fontSize: 13.5),
                     ),
                   ],
                 ),
@@ -399,8 +379,9 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                           width: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.4,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text(
@@ -477,10 +458,7 @@ class _InputField extends StatelessWidget {
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: const TextStyle(
-              color: bodyColor,
-              fontSize: 14.5,
-            ),
+            hintStyle: const TextStyle(color: bodyColor, fontSize: 14.5),
             filled: true,
             fillColor: fieldBg,
             prefixIcon: maxLines == 1 ? Icon(icon, color: bodyColor) : null,
@@ -494,10 +472,7 @@ class _InputField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(
-                color: titleColor,
-                width: 1.2,
-              ),
+              borderSide: const BorderSide(color: titleColor, width: 1.2),
             ),
           ),
         ),
@@ -546,10 +521,8 @@ class _DropdownField extends StatelessWidget {
           initialValue: value,
           items: items
               .map(
-                (item) => DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(item),
-                ),
+                (item) =>
+                    DropdownMenuItem<String>(value: item, child: Text(item)),
               )
               .toList(),
           onChanged: onChanged,
@@ -565,10 +538,7 @@ class _DropdownField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
-              borderSide: const BorderSide(
-                color: titleColor,
-                width: 1.2,
-              ),
+              borderSide: const BorderSide(color: titleColor, width: 1.2),
             ),
           ),
         ),
@@ -626,10 +596,7 @@ class _PickerCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     value,
-                    style: const TextStyle(
-                      color: bodyColor,
-                      fontSize: 14.5,
-                    ),
+                    style: const TextStyle(color: bodyColor, fontSize: 14.5),
                   ),
                 ),
               ],
