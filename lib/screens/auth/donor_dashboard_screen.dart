@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'create_food_screen.dart';
 import 'donor_profile_screen.dart';
@@ -89,6 +91,8 @@ class _DonorHomeTab extends StatelessWidget {
     const Color titleColor = Color(0xFF1D2939);
     const Color bodyColor = Color(0xFF6B7280);
 
+    final user = FirebaseAuth.instance.currentUser;
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(18, 14, 18, 110),
@@ -102,16 +106,16 @@ class _DonorHomeTab extends StatelessWidget {
                   backgroundColor: const Color(0xFFE7EFE7),
                   child: Icon(
                     Icons.person,
-                    color: primary.withValues(alpha: 0.95),
+                    color: primary.withOpacity(0.95),
                     size: 28,
                   ),
                 ),
                 const SizedBox(width: 14),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Welcome back 👋',
                         style: TextStyle(
                           fontSize: 15,
@@ -119,10 +123,10 @@ class _DonorHomeTab extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        'Donor Dashboard',
-                        style: TextStyle(
+                        user?.email ?? 'Donor Dashboard',
+                        style: const TextStyle(
                           fontSize: 18,
                           color: titleColor,
                           fontWeight: FontWeight.w800,
@@ -143,28 +147,73 @@ class _DonorHomeTab extends StatelessWidget {
             ),
             const SizedBox(height: 18),
 
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-              decoration: BoxDecoration(
-                color: primary,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: primary.withValues(alpha: 0.20),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _StatItem(value: '1', label: 'Meals Shared'),
-                  _StatItem(value: '0', label: 'Active Posts'),
-                  _StatItem(value: '0', label: 'Completed'),
-                ],
-              ),
+            StreamBuilder<QuerySnapshot>(
+              stream: user == null
+                  ? null
+                  : FirebaseFirestore.instance
+                      .collection('food_posts')
+                      .where('donorId', isEqualTo: user.uid)
+                      .snapshots(),
+              builder: (context, postSnapshot) {
+                final totalPosts = postSnapshot.data?.docs.length ?? 0;
+
+                return StreamBuilder<QuerySnapshot>(
+                  stream: user == null
+                      ? null
+                      : FirebaseFirestore.instance
+                          .collection('pickup_requests')
+                          .where('donorId', isEqualTo: user.uid)
+                          .snapshots(),
+                  builder: (context, requestSnapshot) {
+                    final requests = requestSnapshot.data?.docs ?? [];
+
+                    final activePosts = totalPosts;
+                    final completed = requests.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return (data['pickupStatus'] ?? '')
+                              .toString()
+                              .toLowerCase() ==
+                          'completed';
+                    }).length;
+
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: primary,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: primary.withOpacity(0.20),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _StatItem(
+                            value: '$totalPosts',
+                            label: 'Meals Shared',
+                          ),
+                          _StatItem(
+                            value: '$activePosts',
+                            label: 'Active Posts',
+                          ),
+                          _StatItem(
+                            value: '$completed',
+                            label: 'Completed',
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
             ),
 
             const SizedBox(height: 22),
@@ -184,7 +233,7 @@ class _DonorHomeTab extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -225,6 +274,8 @@ class _DonorHomeTab extends StatelessWidget {
                 ),
               ),
             ),
+
+            const SizedBox(height: 22),
 
             const Text(
               'Quick Actions',
@@ -267,85 +318,6 @@ class _DonorHomeTab extends StatelessWidget {
             const SizedBox(height: 22),
 
             const Text(
-              'Pending Request',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: titleColor,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 16,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    height: 52,
-                    width: 52,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE9F6EA),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.handshake_outlined, color: primary),
-                  ),
-                  const SizedBox(width: 14),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hope Foundation requested pickup',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            color: titleColor,
-                          ),
-                        ),
-                        SizedBox(height: 5),
-                        Text(
-                          'Rice, Curry • 20 meal packs • Mirpur',
-                          style: TextStyle(color: bodyColor, fontSize: 13.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF4D8),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: const Text(
-                      'Pending',
-                      style: TextStyle(
-                        color: Color(0xFF9A6700),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 22),
-
-            const Text(
               'Recent Activity',
               style: TextStyle(
                 fontSize: 17,
@@ -361,7 +333,7 @@ class _DonorHomeTab extends StatelessWidget {
             ),
             const _ActivityTile(
               title: 'Post created',
-              subtitle: 'You added 20 meal packs',
+              subtitle: 'You added a food donation',
             ),
             const _ActivityTile(
               title: 'Request received',
@@ -424,54 +396,281 @@ class _MyPostsTab extends StatelessWidget {
 class _RequestsTab extends StatelessWidget {
   const _RequestsTab();
 
+  Future<void> _updateRequestStatus({
+    required BuildContext context,
+    required String requestId,
+    required String status,
+    required String organizationName,
+    required String foodName,
+    required String organizationId,
+    required String postId,
+  }) async {
+    final normalizedStatus = status.toLowerCase();
+
+    String pickupStatus = 'pending';
+    if (normalizedStatus == 'accepted') {
+      pickupStatus = 'accepted';
+    } else if (normalizedStatus == 'declined') {
+      pickupStatus = 'cancelled';
+    } else if (normalizedStatus == 'cancelled') {
+      pickupStatus = 'cancelled';
+    }
+
+    await FirebaseFirestore.instance
+        .collection('pickup_requests')
+        .doc(requestId)
+        .update({
+      'status': normalizedStatus,
+      'pickupStatus': pickupStatus,
+      'updatedAt': Timestamp.now(),
+      'pickupUpdatedAt': Timestamp.now(),
+    });
+
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'userId': organizationId,
+      'title': normalizedStatus == 'accepted'
+          ? 'Request accepted'
+          : 'Request declined',
+      'body': normalizedStatus == 'accepted'
+          ? 'Your request for $foodName was accepted by donor'
+          : 'Your request for $foodName was declined by donor',
+      'type': normalizedStatus == 'accepted'
+          ? 'request_accepted'
+          : 'request_declined',
+      'isRead': false,
+      'createdAt': Timestamp.now(),
+      'requestId': requestId,
+      'postId': postId,
+      'organizationName': organizationName,
+    });
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          normalizedStatus == 'accepted'
+              ? 'Request accepted'
+              : 'Request declined',
+        ),
+      ),
+    );
+  }
+
+  Color _statusTextColor(String status, String pickupStatus) {
+    final s = status.toLowerCase();
+    final p = pickupStatus.toLowerCase();
+
+    if (s == 'pending') return const Color(0xFF9A6700);
+    if (s == 'declined') return Colors.red;
+    if (s == 'cancelled') return Colors.redAccent;
+
+    if (s == 'accepted') {
+      if (p == 'scheduled') return Colors.orange;
+      if (p == 'on_the_way') return Colors.deepPurple;
+      if (p == 'completed') return Colors.teal;
+      return const Color(0xFF2E7D32);
+    }
+
+    return const Color(0xFF2E7D32);
+  }
+
+  Color _statusBgColor(String status, String pickupStatus) {
+    final s = status.toLowerCase();
+    final p = pickupStatus.toLowerCase();
+
+    if (s == 'pending') return const Color(0xFFFFF4D8);
+    if (s == 'declined') return const Color(0xFFFFE5E5);
+    if (s == 'cancelled') return const Color(0xFFFFEAEA);
+
+    if (s == 'accepted') {
+      if (p == 'scheduled') return const Color(0xFFFFF1E0);
+      if (p == 'on_the_way') return const Color(0xFFF0E9FF);
+      if (p == 'completed') return const Color(0xFFE7F8F4);
+      return const Color(0xFFE7F6EA);
+    }
+
+    return const Color(0xFFE7F6EA);
+  }
+
+  String _statusLabel(String status, String pickupStatus) {
+    final s = status.toLowerCase();
+    final p = pickupStatus.toLowerCase();
+
+    if (s == 'pending') return 'Pending';
+    if (s == 'declined') return 'Declined';
+    if (s == 'cancelled') return 'Cancelled';
+
+    if (s == 'accepted') {
+      if (p == 'scheduled') return 'Pickup Scheduled';
+      if (p == 'on_the_way') return 'On the Way';
+      if (p == 'completed') return 'Completed';
+      return 'Accepted';
+    }
+
+    return status;
+  }
+
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFF2E7D32);
     const Color titleColor = Color(0xFF1D2939);
     const Color bodyColor = Color(0xFF6B7280);
 
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const SafeArea(
+        child: Center(
+          child: Text(
+            'Please sign in first',
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+      );
+    }
+
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
-        children: [
-          const Text(
-            'Requests',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: titleColor,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Organizations interested in your food posts.',
-            style: TextStyle(fontSize: 14.5, color: bodyColor),
-          ),
-          const SizedBox(height: 18),
-          _RequestCard(
-            ngoName: 'Hope Foundation',
-            details: 'Requested pickup for 20 meal packs',
-            status: 'Pending',
-            statusColor: const Color(0xFF9A6700),
-            statusBg: const Color(0xFFFFF4D8),
-            primaryText: 'Accept',
-            secondaryText: 'Decline',
-            onPrimaryTap: () {},
-            onSecondaryTap: () {},
-          ),
-          const SizedBox(height: 14),
-          _RequestCard(
-            ngoName: 'Care Bridge',
-            details: 'Pickup scheduled for today at 6:00 PM',
-            status: 'Accepted',
-            statusColor: primary,
-            statusBg: const Color(0xFFE7F6EA),
-            primaryText: 'View',
-            secondaryText: 'Message',
-            onPrimaryTap: () {},
-            onSecondaryTap: () {},
-          ),
-        ],
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('pickup_requests')
+            .where('donorId', isEqualTo: user.uid)
+            .orderBy('requestedAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
+            children: [
+              const Text(
+                'Requests',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: titleColor,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Organizations interested in your food posts.',
+                style: TextStyle(fontSize: 14.5, color: bodyColor),
+              ),
+              const SizedBox(height: 18),
+
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 40),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (snapshot.hasError)
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Text(
+                    'Error: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                )
+              else if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: const Column(
+                    children: [
+                      Icon(
+                        Icons.inbox_outlined,
+                        size: 46,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'No requests yet',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: titleColor,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'When organizations request your food posts, they will appear here.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: bodyColor,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ...snapshot.data!.docs.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+
+                  final requestId = doc.id;
+                  final organizationName =
+                      (data['organizationName'] ?? 'Organization').toString();
+                  final foodName = (data['foodName'] ?? 'Food Item').toString();
+                  final quantity = (data['quantity'] ?? '').toString();
+                  final location = (data['location'] ?? '').toString();
+                  final status = (data['status'] ?? 'pending').toString();
+                  final pickupStatus =
+                      (data['pickupStatus'] ?? 'pending').toString();
+                  final organizationId =
+                      (data['organizationId'] ?? '').toString();
+                  final postId = (data['postId'] ?? '').toString();
+
+                  final details =
+                      '$foodName${quantity.isNotEmpty ? ' • $quantity' : ''}${location.isNotEmpty ? ' • $location' : ''}';
+
+                  final isPending = status.toLowerCase() == 'pending';
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: _RequestCard(
+                      ngoName: organizationName,
+                      details: details,
+                      status: _statusLabel(status, pickupStatus),
+                      statusColor: _statusTextColor(status, pickupStatus),
+                      statusBg: _statusBgColor(status, pickupStatus),
+                      primaryText: isPending ? 'Accept' : 'View',
+                      secondaryText: isPending ? 'Decline' : 'Close',
+                      onPrimaryTap: () async {
+                        if (!isPending) return;
+                        await _updateRequestStatus(
+                          context: context,
+                          requestId: requestId,
+                          status: 'accepted',
+                          organizationName: organizationName,
+                          foodName: foodName,
+                          organizationId: organizationId,
+                          postId: postId,
+                        );
+                      },
+                      onSecondaryTap: () async {
+                        if (!isPending) return;
+                        await _updateRequestStatus(
+                          context: context,
+                          requestId: requestId,
+                          status: 'declined',
+                          organizationName: organizationName,
+                          foodName: foodName,
+                          organizationId: organizationId,
+                          postId: postId,
+                        );
+                      },
+                    ),
+                  );
+                }),
+            ],
+          );
+        },
       ),
     );
   }
@@ -486,19 +685,6 @@ class _HistoryTab extends StatelessWidget {
       title: 'History',
       subtitle: 'Completed pickups and donation records will appear here.',
       icon: Icons.history_rounded,
-    );
-  }
-}
-
-class _ProfileTab extends StatelessWidget {
-  const _ProfileTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _SimpleTabWrapper(
-      title: 'Profile',
-      subtitle: 'Manage your personal details, address and account settings.',
-      icon: Icons.person_outline_rounded,
     );
   }
 }
@@ -563,7 +749,7 @@ class _QuickActionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withOpacity(0.04),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -615,7 +801,7 @@ class _ActivityTile extends StatelessWidget {
             backgroundColor: const Color(0xFFE7EFE7),
             child: Icon(
               Icons.check,
-              color: primary.withValues(alpha: 0.95),
+              color: primary.withOpacity(0.95),
               size: 24,
             ),
           ),
@@ -658,11 +844,12 @@ class _RequestCard extends StatelessWidget {
   final VoidCallback onSecondaryTap;
 
   const _RequestCard({
+    super.key,
     required this.ngoName,
     required this.details,
     required this.status,
-    required this.statusColor,
-    required this.statusBg,
+    this.statusColor = const Color(0xFF9A6700),
+    this.statusBg = const Color(0xFFFFF4D8),
     required this.primaryText,
     required this.secondaryText,
     required this.onPrimaryTap,
@@ -682,7 +869,7 @@ class _RequestCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 14,
             offset: const Offset(0, 8),
           ),
