@@ -506,7 +506,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
+                      foregroundColor: const Color.fromARGB(255, 107, 216, 90),
                       side: const BorderSide(color: Colors.redAccent),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),
@@ -514,6 +514,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 14),
                 Text(
                   _isEditing
                       ? 'You can now update your information and save it.'

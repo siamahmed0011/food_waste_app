@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'browse_food_screen.dart';
 import 'organization_requests_screen.dart';
@@ -141,7 +143,7 @@ class _OrganizationHomeTab extends StatelessWidget {
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: primary.withValues(alpha: 0.20),
+                    color: primary.withValues(alpha:0.20),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -167,7 +169,7 @@ class _OrganizationHomeTab extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Row(
-              children: [
+              children: const [
                 Expanded(
                   child: _OrgQuickActionCard(
                     icon: Icons.search_rounded,
@@ -175,8 +177,8 @@ class _OrganizationHomeTab extends StatelessWidget {
                     subtitle: 'Find nearby donations',
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Expanded(
+                SizedBox(width: 12),
+                Expanded(
                   child: _OrgQuickActionCard(
                     icon: Icons.assignment_turned_in_outlined,
                     title: 'My Requests',
@@ -217,7 +219,10 @@ class _OrganizationHomeTab extends StatelessWidget {
                       color: const Color(0xFFE8F1FD),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.fastfood_outlined, color: primary),
+                    child: const Icon(
+                      Icons.fastfood_outlined,
+                      color: primary,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -235,7 +240,10 @@ class _OrganizationHomeTab extends StatelessWidget {
                         SizedBox(height: 5),
                         Text(
                           'When donors post food near your area, it will appear here.',
-                          style: TextStyle(color: bodyColor, fontSize: 13.5),
+                          style: TextStyle(
+                            color: bodyColor,
+                            fontSize: 13.5,
+                          ),
                         ),
                       ],
                     ),
@@ -306,17 +314,58 @@ class _OrganizationProfileTab extends StatefulWidget {
 }
 
 class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
-  Map<String, String> profileData = {
-    'name': '',
-    'email': '',
-    'phone': '',
-    'website': '',
-    'address': '',
-    'serviceArea': '',
-    'about': '',
-    'hours': '',
-    'pickup': '',
-  };
+  Map<String, String> profileData = {};
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!mounted) return;
+
+      if (doc.exists && doc.data() != null) {
+        final raw = doc.data()!;
+        final converted = <String, String>{};
+
+        for (final entry in raw.entries) {
+          converted[entry.key] = entry.value?.toString() ?? '';
+        }
+
+        setState(() {
+          profileData = converted;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          profileData = {};
+          isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        profileData = {};
+        isLoading = false;
+      });
+    }
+  }
 
   String _displayValue(String key) {
     final value = (profileData[key] ?? '').trim();
@@ -329,6 +378,15 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
     const Color titleColor = Color(0xFF1D2939);
     const Color bodyColor = Color(0xFF6B7280);
     const Color background = Color(0xFFF6F7F9);
+
+    if (isLoading) {
+      return const Scaffold(
+        backgroundColor: background,
+        body: Center(
+          child: CircularProgressIndicator(color: primary),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: background,
@@ -349,7 +407,10 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
               const SizedBox(height: 6),
               const Text(
                 'Manage your NGO details, contact information and service area.',
-                style: TextStyle(fontSize: 14.5, color: bodyColor),
+                style: TextStyle(
+                  fontSize: 14.5,
+                  color: bodyColor,
+                ),
               ),
               const SizedBox(height: 18),
               Container(
@@ -360,7 +421,7 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                   borderRadius: BorderRadius.circular(26),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
+                      color: Colors.black.withValues(alpha:0.04),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
@@ -437,20 +498,28 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                         onPressed: () async {
                           final result =
                               await Navigator.push<Map<String, String>>(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => EditOrganizationProfileScreen(
-                                    initialData: profileData,
-                                  ),
-                                ),
-                              );
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EditOrganizationProfileScreen(
+                                initialData: profileData,
+                              ),
+                            ),
+                          );
 
-                          if (!context.mounted) return;
+                          if (!mounted) return;
 
                           if (result != null) {
-                            setState(() {
-                              profileData = result;
-                            });
+                            final user = FirebaseAuth.instance.currentUser;
+                            if (user != null) {
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(user.uid)
+                                  .set(result, SetOptions(merge: true));
+                            }
+
+                            await _loadProfile();
+
+                            if (!mounted) return;
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -461,7 +530,9 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                                 ),
                                 content: const Text(
                                   'Profile updated successfully',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             );
@@ -631,7 +702,7 @@ class _OrgInfoStatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withValues(alpha:0.04),
             blurRadius: 14,
             offset: const Offset(0, 8),
           ),
@@ -650,7 +721,13 @@ class _OrgInfoStatCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: bodyColor, fontSize: 13.5)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: bodyColor,
+              fontSize: 13.5,
+            ),
+          ),
         ],
       ),
     );
@@ -794,13 +871,22 @@ class _SettingTile extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.w800, color: titleColor),
+        style: const TextStyle(
+          fontWeight: FontWeight.w800,
+          color: titleColor,
+        ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: bodyColor, fontSize: 13),
+        style: const TextStyle(
+          color: bodyColor,
+          fontSize: 13,
+        ),
       ),
-      trailing: const Icon(Icons.chevron_right_rounded, color: bodyColor),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        color: bodyColor,
+      ),
     );
   }
 }
@@ -810,7 +896,11 @@ class _ProfileDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(height: 1, thickness: 1, color: Color(0xFFF1F1F1));
+    return const Divider(
+      height: 1,
+      thickness: 1,
+      color: Color(0xFFF1F1F1),
+    );
   }
 }
 
@@ -818,7 +908,10 @@ class _OrgStatItem extends StatelessWidget {
   final String value;
   final String label;
 
-  const _OrgStatItem({required this.value, required this.label});
+  const _OrgStatItem({
+    required this.value,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -892,7 +985,10 @@ class _OrgQuickActionCard extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12.5, color: bodyColor),
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: bodyColor,
+            ),
           ),
         ],
       ),
@@ -904,7 +1000,10 @@ class _OrgActivityTile extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _OrgActivityTile({required this.title, required this.subtitle});
+  const _OrgActivityTile({
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -941,7 +1040,10 @@ class _OrgActivityTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(color: bodyColor, fontSize: 13.5),
+                  style: const TextStyle(
+                    color: bodyColor,
+                    fontSize: 13.5,
+                  ),
                 ),
               ],
             ),

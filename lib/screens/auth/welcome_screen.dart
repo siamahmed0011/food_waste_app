@@ -2,12 +2,7 @@ import 'package:flutter/material.dart';
 import 'role_selection_screen.dart';
 import 'sign_in_screen.dart';
 
-enum HomeSection {
-  home,
-  about,
-  howItWorks,
-  contact,
-}
+enum HomeSection { home, about, howItWorks, contact }
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -152,18 +147,13 @@ class _HomeDrawer extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: primary.withValues(alpha: 0.08),
-              ),
+              decoration: BoxDecoration(color: primary.withValues(alpha: 0.08)),
               child: const Row(
                 children: [
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.eco_rounded,
-                      color: primary,
-                    ),
+                    child: Icon(Icons.eco_rounded, color: primary),
                   ),
                   SizedBox(width: 12),
                   Expanded(
@@ -227,9 +217,7 @@ class _HomeDrawer extends StatelessWidget {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const SignInScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const SignInScreen()),
                 );
               },
             ),
@@ -239,10 +227,7 @@ class _HomeDrawer extends StatelessWidget {
               child: Text(
                 'Safe sharing. Fast pickup. Trusted community.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: bodyColor,
-                  fontSize: 12.8,
-                ),
+                style: TextStyle(color: bodyColor, fontSize: 12.8),
               ),
             ),
           ],
@@ -273,10 +258,7 @@ class _DrawerTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       child: ListTile(
-        leading: Icon(
-          icon,
-          color: selected ? primary : titleColor,
-        ),
+        leading: Icon(icon, color: selected ? primary : titleColor),
         title: Text(
           title,
           style: TextStyle(
@@ -285,9 +267,7 @@ class _DrawerTile extends StatelessWidget {
           ),
         ),
         tileColor: selected ? primary.withValues(alpha: 0.08) : null,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         onTap: onTap,
       ),
     );
@@ -446,11 +426,7 @@ class _HomeView extends StatelessWidget {
             child: Text(
               'A simple and trusted process for donors and organizations.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14.5,
-                color: bodyColor,
-                height: 1.7,
-              ),
+              style: TextStyle(fontSize: 14.5, color: bodyColor, height: 1.7),
             ),
           ),
           const SizedBox(height: 18),
@@ -771,9 +747,7 @@ class _Badge extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.22),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
       ),
       child: Text(
         text,
@@ -827,11 +801,7 @@ class _FeatureCard extends StatelessWidget {
               color: primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(
-              icon,
-              color: primary,
-              size: 28,
-            ),
+            child: Icon(icon, color: primary, size: 28),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -868,10 +838,7 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _SectionHeader({
-    required this.title,
-    required this.subtitle,
-  });
+  const _SectionHeader({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -893,11 +860,7 @@ class _SectionHeader extends StatelessWidget {
         Text(
           subtitle,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 14.5,
-            color: bodyColor,
-            height: 1.7,
-          ),
+          style: const TextStyle(fontSize: 14.5, color: bodyColor, height: 1.7),
         ),
       ],
     );
@@ -1070,11 +1033,7 @@ class _BulletText extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.check_circle_rounded,
-            color: primary,
-            size: 20,
-          ),
+          const Icon(Icons.check_circle_rounded, color: primary, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
