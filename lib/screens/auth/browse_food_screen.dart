@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -12,15 +13,14 @@ class BrowseFoodScreen extends StatelessWidget {
 
   String _formatTimestamp(dynamic value) {
     if (value is Timestamp) {
-      final dt = value.toDate();
-      return DateFormat('dd MMM yyyy • hh:mm a').format(dt);
+      return DateFormat('dd MMM yyyy • hh:mm a').format(value.toDate());
     }
     return 'Not available';
   }
 
   bool _isExpired(Map<String, dynamic> data) {
-    final expiryText = (data['expiry'] ?? '').toString().trim().toLowerCase();
-    final status = (data['status'] ?? '').toString().trim().toLowerCase();
+    final status = (data['status'] ?? '').toString().toLowerCase();
+    final expiryText = (data['expiry'] ?? '').toString().toLowerCase();
 
     if (status == 'expired') return true;
     if (expiryText.contains('expired')) return true;
@@ -28,12 +28,363 @@ class BrowseFoodScreen extends StatelessWidget {
     return false;
   }
 
-  Color _statusBg(bool expired) {
-    return expired ? const Color(0xFFFFE5E5) : const Color(0xFFE8F1FD);
+  Future<void> _sendRequest({
+    required BuildContext context,
+    required String postId,
+    required Map<String, dynamic> postData,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please sign in first')));
+      return;
+    }
+
+    final orgDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final orgData = orgDoc.data() ?? {};
+    final organizationName = (orgData['name'] ?? 'Organization').toString();
+
+    final donorId = (postData['donorId'] ?? '').toString();
+    final donorName = (postData['donorName'] ?? 'Donor').toString();
+
+    final requestRef = await FirebaseFirestore.instance
+        .collection('pickup_requests')
+        .add({
+          'postId': postId,
+          'foodName': (postData['foodName'] ?? '').toString(),
+          'quantity': (postData['quantity'] ?? '').toString(),
+          'location': (postData['location'] ?? '').toString(),
+          'donorId': donorId,
+          'donorName': donorName,
+          'organizationId': user.uid,
+          'organizationName': organizationName,
+          'status': 'pending',
+          'requestedAt': Timestamp.now(),
+          'updatedAt': Timestamp.now(),
+        });
+
+    if (donorId.isNotEmpty) {
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'userId': donorId,
+        'title': 'New pickup request',
+        'body':
+            '$organizationName requested ${(postData['foodName'] ?? 'food')}',
+        'type': 'request_sent',
+        'isRead': false,
+        'createdAt': Timestamp.now(),
+        'requestId': requestRef.id,
+        'postId': postId,
+      });
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Request sent successfully')));
   }
 
-  Color _statusText(bool expired) {
-    return expired ? Colors.red : primary;
+  Future<void> _cancelRequest({
+    required BuildContext context,
+    required String requestId,
+    required String donorId,
+    required String foodName,
+    required String organizationName,
+    required String postId,
+  }) async {
+    await FirebaseFirestore.instance
+        .collection('pickup_requests')
+        .doc(requestId)
+        .update({'status': 'cancelled', 'updatedAt': Timestamp.now()});
+
+    if (donorId.isNotEmpty) {
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'userId': donorId,
+        'title': 'Request cancelled',
+        'body': '$organizationName cancelled request for $foodName',
+        'type': 'request_cancelled',
+        'isRead': false,
+        'createdAt': Timestamp.now(),
+        'requestId': requestId,
+        'postId': postId,
+      });
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Request cancelled')));
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Container(
+      height: 190,
+      width: double.infinity,
+      color: const Color(0xFFE8F1FD),
+      child: const Center(
+        child: Icon(Icons.fastfood_rounded, size: 54, color: primary),
+      ),
+    );
+  }
+
+  Widget _chip(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F1FD),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: primary),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: const TextStyle(
+              color: primary,
+              fontWeight: FontWeight.w700,
+              fontSize: 12.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(
+                color: bodyColor,
+                fontSize: 13.5,
+                height: 1.5,
+              ),
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(
+                    color: titleColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextSpan(text: value),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _requestButton({
+    required BuildContext context,
+    required String postId,
+    required Map<String, dynamic> postData,
+  }) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const SizedBox.shrink();
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('pickup_requests')
+          .where('postId', isEqualTo: postId)
+          .where('organizationId', isEqualTo: user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: null,
+              icon: const Icon(Icons.hourglass_empty_rounded),
+              label: const Text('Loading...'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade200,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          );
+        }
+
+        final docs = snapshot.data!.docs;
+
+        final activeRequests = docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final status = (data['status'] ?? '').toString();
+          return status != 'cancelled' && status != 'declined';
+        }).toList();
+
+        DocumentSnapshot? requestDoc;
+        if (activeRequests.isNotEmpty) {
+          activeRequests.sort((a, b) {
+            final aData = a.data() as Map<String, dynamic>;
+            final bData = b.data() as Map<String, dynamic>;
+
+            final aTime =
+                (aData['updatedAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+            final bTime =
+                (bData['updatedAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+
+            return bTime.compareTo(aTime);
+          });
+          requestDoc = activeRequests.first;
+        }
+
+        final expired = _isExpired(postData);
+
+        if (expired) {
+          return SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: null,
+              icon: const Icon(Icons.block),
+              label: const Text('Expired'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade200,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          );
+        }
+
+        if (requestDoc == null) {
+          return SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _sendRequest(
+                context: context,
+                postId: postId,
+                postData: postData,
+              ),
+              icon: const Icon(Icons.send_outlined),
+              label: const Text(
+                'Send Request',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          );
+        }
+
+        final requestData = requestDoc.data() as Map<String, dynamic>;
+        final status = (requestData['status'] ?? 'pending').toString();
+
+        if (status == 'pending') {
+          return Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _cancelRequest(
+                    context: context,
+                    requestId: requestDoc!.id,
+                    donorId: (requestData['donorId'] ?? '').toString(),
+                    foodName: (requestData['foodName'] ?? '').toString(),
+                    organizationName:
+                        (requestData['organizationName'] ?? 'Organization')
+                            .toString(),
+                    postId: postId,
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.redAccent),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text(
+                    'Cancel Request',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: null,
+                  icon: const Icon(Icons.hourglass_top_rounded),
+                  label: const Text('Pending'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade200,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        Color statusColor = primary;
+        IconData statusIcon = Icons.info_outline;
+
+        if (status == 'declined') {
+          statusColor = Colors.red;
+          statusIcon = Icons.close_rounded;
+        } else if (status == 'accepted') {
+          statusColor = Colors.green;
+          statusIcon = Icons.check_circle_outline;
+        } else if (status == 'cancelled') {
+          statusColor = Colors.orange;
+          statusIcon = Icons.cancel_outlined;
+        } else if (status == 'collected') {
+          statusColor = Colors.teal;
+          statusIcon = Icons.inventory_2_outlined;
+        }
+
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: null,
+            icon: Icon(statusIcon),
+            label: Text(
+              status[0].toUpperCase() + status.substring(1),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: statusColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -82,9 +433,9 @@ class BrowseFoodScreen extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: Text(
-                          'Something went wrong.\n${snapshot.error}',
+                          'Error: ${snapshot.error}',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: bodyColor),
+                          style: const TextStyle(color: bodyColor, height: 1.6),
                         ),
                       ),
                     );
@@ -145,14 +496,15 @@ class BrowseFoodScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
                     itemCount: docs.length,
                     itemBuilder: (context, index) {
-                      final data = docs[index].data() as Map<String, dynamic>;
+                      final doc = docs[index];
+                      final data = doc.data() as Map<String, dynamic>;
 
                       final foodName = (data['foodName'] ?? 'Food Item')
                           .toString();
                       final quantity = (data['quantity'] ?? 'Not specified')
                           .toString();
-                      final category =
-                          (data['category'] ?? 'Category not added').toString();
+                      final category = (data['category'] ?? 'Not specified')
+                          .toString();
                       final condition = (data['condition'] ?? 'Not specified')
                           .toString();
                       final location =
@@ -195,13 +547,11 @@ class BrowseFoodScreen extends StatelessWidget {
                               child: imageUrl.isNotEmpty
                                   ? Image.network(
                                       imageUrl,
-                                      height: 180,
+                                      height: 190,
                                       width: double.infinity,
                                       fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                            return _buildImagePlaceholder();
-                                          },
+                                      errorBuilder: (_, __, ___) =>
+                                          _buildImagePlaceholder(),
                                     )
                                   : _buildImagePlaceholder(),
                             ),
@@ -228,7 +578,9 @@ class BrowseFoodScreen extends StatelessWidget {
                                           vertical: 6,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: _statusBg(expired),
+                                          color: expired
+                                              ? const Color(0xFFFFE5E5)
+                                              : const Color(0xFFE8F1FD),
                                           borderRadius: BorderRadius.circular(
                                             30,
                                           ),
@@ -236,7 +588,9 @@ class BrowseFoodScreen extends StatelessWidget {
                                         child: Text(
                                           expired ? 'Expired' : 'Available',
                                           style: TextStyle(
-                                            color: _statusText(expired),
+                                            color: expired
+                                                ? Colors.red
+                                                : primary,
                                             fontWeight: FontWeight.w700,
                                             fontSize: 12.5,
                                           ),
@@ -311,35 +665,10 @@ class BrowseFoodScreen extends StatelessWidget {
                                     ),
                                   ],
                                   const SizedBox(height: 16),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton.icon(
-                                      onPressed: expired ? null : () {},
-                                      icon: const Icon(Icons.send_outlined),
-                                      label: Text(
-                                        expired
-                                            ? 'Request Unavailable'
-                                            : 'Send Request',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: primary,
-                                        disabledBackgroundColor:
-                                            Colors.blue.shade200,
-                                        foregroundColor: Colors.white,
-                                        elevation: 0,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 14,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                  _requestButton(
+                                    context: context,
+                                    postId: doc.id,
+                                    postData: data,
                                   ),
                                 ],
                               ),
@@ -355,73 +684,6 @@ class BrowseFoodScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildImagePlaceholder() {
-    return Container(
-      height: 180,
-      width: double.infinity,
-      color: const Color(0xFFEAF2FD),
-      child: const Center(
-        child: Icon(Icons.fastfood_rounded, size: 56, color: primary),
-      ),
-    );
-  }
-
-  Widget _chip(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F1FD),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: primary),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: const TextStyle(
-              color: primary,
-              fontWeight: FontWeight.w700,
-              fontSize: 12.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoRow(IconData icon, String title, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: primary),
-        const SizedBox(width: 10),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: const TextStyle(
-                color: bodyColor,
-                fontSize: 13.5,
-                height: 1.5,
-              ),
-              children: [
-                TextSpan(
-                  text: '$title: ',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: titleColor,
-                  ),
-                ),
-                TextSpan(text: value),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

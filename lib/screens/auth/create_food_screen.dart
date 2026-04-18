@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class CreateFoodScreen extends StatefulWidget {
@@ -77,6 +78,15 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
   }
 
   Future<void> _publishPost() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please sign in first')));
+      return;
+    }
+
     if (_foodNameController.text.trim().isEmpty ||
         _quantityController.text.trim().isEmpty ||
         _locationController.text.trim().isEmpty ||
@@ -95,7 +105,17 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
     });
 
     try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final donorData = userDoc.data() ?? {};
+      final donorName = (donorData['name'] ?? 'Donor').toString();
+
       await FirebaseFirestore.instance.collection('food_posts').add({
+        'donorId': user.uid,
+        'donorName': donorName,
         'foodName': _foodNameController.text.trim(),
         'quantity': _quantityController.text.trim(),
         'serves': _servesController.text.trim(),
@@ -108,7 +128,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
         'pickupTime': _formattedTime(),
         'status': 'available',
         'createdAt': Timestamp.now(),
-        'donorName': 'Donor',
+        'imageUrl': '',
       });
 
       if (!context.mounted) return;
@@ -176,7 +196,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: Colors.black.withOpacity(0.04),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -199,10 +219,8 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 style: TextStyle(fontSize: 14.5, color: bodyColor, height: 1.6),
               ),
               const SizedBox(height: 22),
-
               const _SectionTitle('Basic Info'),
               const SizedBox(height: 12),
-
               _InputField(
                 controller: _foodNameController,
                 label: 'Food Name',
@@ -210,7 +228,6 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 icon: Icons.fastfood_outlined,
               ),
               const SizedBox(height: 14),
-
               _DropdownField(
                 label: 'Food Category',
                 value: _selectedCategory,
@@ -224,7 +241,6 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 },
               ),
               const SizedBox(height: 14),
-
               _InputField(
                 controller: _quantityController,
                 label: 'Quantity',
@@ -232,19 +248,15 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 icon: Icons.inventory_2_outlined,
               ),
               const SizedBox(height: 14),
-
               _InputField(
                 controller: _servesController,
                 label: 'Serves People',
                 hintText: 'e.g. 15 people',
                 icon: Icons.groups_outlined,
               ),
-
               const SizedBox(height: 22),
-
               const _SectionTitle('Pickup Details'),
               const SizedBox(height: 12),
-
               _InputField(
                 controller: _locationController,
                 label: 'Pickup Location',
@@ -252,7 +264,6 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 icon: Icons.location_on_outlined,
               ),
               const SizedBox(height: 14),
-
               Row(
                 children: [
                   Expanded(
@@ -274,12 +285,9 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 22),
-
               const _SectionTitle('Safety Info'),
               const SizedBox(height: 12),
-
               _DropdownField(
                 label: 'Food Condition',
                 value: _selectedCondition,
@@ -293,7 +301,6 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 },
               ),
               const SizedBox(height: 14),
-
               _InputField(
                 controller: _expiryController,
                 label: 'Expiry / Best Before',
@@ -301,7 +308,6 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 icon: Icons.timer_outlined,
               ),
               const SizedBox(height: 14),
-
               _InputField(
                 controller: _notesController,
                 label: 'Notes',
@@ -309,9 +315,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 icon: Icons.notes_outlined,
                 maxLines: 4,
               ),
-
               const SizedBox(height: 22),
-
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -357,9 +361,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 22),
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
