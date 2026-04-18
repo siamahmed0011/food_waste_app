@@ -17,25 +17,40 @@ class _OrganizationDashboardScreenState
     extends State<OrganizationDashboardScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    _OrganizationHomeTab(),
-    BrowseFoodScreen(),
-    OrganizationRequestsScreen(),
-    _OrganizationHistoryTab(),
-    _OrganizationProfileTab(),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFF1565C0);
     const Color background = Color(0xFFF6F7F9);
+
+    final pages = [
+      _OrganizationHomeTab(
+        onBrowseTap: () {
+          setState(() {
+            _currentIndex = 1;
+          });
+        },
+        onRequestsTap: () {
+          setState(() {
+            _currentIndex = 2;
+          });
+        },
+        onProfileTap: () {
+          setState(() {
+            _currentIndex = 4;
+          });
+        },
+      ),
+      const BrowseFoodScreen(),
+      const OrganizationRequestsScreen(),
+      const _OrganizationHistoryTab(),
+      const _OrganizationProfileTab(),
+    ];
 
     return Scaffold(
       backgroundColor: background,
-      body: _pages[_currentIndex],
+      body: pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: primary,
+        selectedItemColor: const Color(0xFF1565C0),
         unselectedItemColor: const Color(0xFF7A7F87),
         backgroundColor: Colors.white,
         type: BottomNavigationBarType.fixed,
@@ -74,13 +89,34 @@ class _OrganizationDashboardScreenState
 }
 
 class _OrganizationHomeTab extends StatelessWidget {
-  const _OrganizationHomeTab();
+  final VoidCallback onBrowseTap;
+  final VoidCallback onRequestsTap;
+  final VoidCallback onProfileTap;
+
+  const _OrganizationHomeTab({
+    required this.onBrowseTap,
+    required this.onRequestsTap,
+    required this.onProfileTap,
+  });
+
+  static const Color primary = Color(0xFF1565C0);
+  static const Color titleColor = Color(0xFF1D2939);
+  static const Color bodyColor = Color(0xFF6B7280);
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFF1565C0);
-    const Color titleColor = Color(0xFF1D2939);
-    const Color bodyColor = Color(0xFF6B7280);
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text(
+            'Please sign in first',
+            style: TextStyle(color: bodyColor),
+          ),
+        ),
+      );
+    }
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -88,76 +124,162 @@ class _OrganizationHomeTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 26,
-                  backgroundColor: const Color(0xFFE8F1FD),
-                  child: Icon(
-                    Icons.apartment_rounded,
-                    color: primary.withValues(alpha: 0.95),
-                    size: 28,
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                final data =
+                    snapshot.data?.data() as Map<String, dynamic>? ?? {};
+                final name = (data['name'] ?? 'Organization').toString();
+                final serviceArea =
+                    (data['serviceArea'] ?? 'Service area not added')
+                        .toString();
+
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primary.withOpacity(0.20),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        'Welcome back 👋',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: bodyColor,
-                          fontWeight: FontWeight.w600,
+                      Container(
+                        height: 62,
+                        width: 62,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.16),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.apartment_rounded,
+                          color: Colors.white,
+                          size: 32,
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Organization Dashboard',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: titleColor,
-                          fontWeight: FontWeight.w800,
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Welcome back 👋',
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              serviceArea,
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: onProfileTap,
+                        icon: const Icon(
+                          Icons.edit_outlined,
+                          color: Colors.white,
                         ),
                       ),
                     ],
                   ),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(
-                    Icons.notifications_none_rounded,
-                    size: 28,
-                    color: titleColor,
-                  ),
-                ),
-              ],
+                );
+              },
             ),
-            const SizedBox(height: 18),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-              decoration: BoxDecoration(
-                color: primary,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: primary.withValues(alpha:0.20),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _OrgStatItem(value: '0', label: 'Available'),
-                  _OrgStatItem(value: '0', label: 'Requests'),
-                  _OrgStatItem(value: '0', label: 'Collected'),
-                ],
-              ),
+            const SizedBox(height: 20),
+
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('food_posts')
+                  .snapshots(),
+              builder: (context, foodSnapshot) {
+                final foodDocs = foodSnapshot.data?.docs ?? [];
+
+                final availableCount = foodDocs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final status = (data['status'] ?? 'available').toString();
+                  return status == 'available';
+                }).length;
+
+                return StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('pickup_requests')
+                      .where('organizationId', isEqualTo: user.uid)
+                      .snapshots(),
+                  builder: (context, requestSnapshot) {
+                    final requestDocs = requestSnapshot.data?.docs ?? [];
+
+                    final pendingCount = requestDocs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return (data['status'] ?? '').toString() == 'pending';
+                    }).length;
+
+                    final collectedCount = requestDocs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return (data['status'] ?? '').toString() == 'collected';
+                    }).length;
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _DashboardStatCard(
+                            value: '$availableCount',
+                            label: 'Available',
+                            icon: Icons.fastfood_outlined,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _DashboardStatCard(
+                            value: '$pendingCount',
+                            label: 'Pending',
+                            icon: Icons.assignment_outlined,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _DashboardStatCard(
+                            value: '$collectedCount',
+                            label: 'Collected',
+                            icon: Icons.inventory_2_outlined,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
             ),
+
             const SizedBox(height: 22),
             const Text(
               'Quick Actions',
@@ -169,27 +291,30 @@ class _OrganizationHomeTab extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Row(
-              children: const [
+              children: [
                 Expanded(
-                  child: _OrgQuickActionCard(
+                  child: _QuickActionCard(
                     icon: Icons.search_rounded,
                     title: 'Browse Food',
-                    subtitle: 'Find nearby donations',
+                    subtitle: 'Find available donations',
+                    onTap: onBrowseTap,
                   ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: _OrgQuickActionCard(
+                  child: _QuickActionCard(
                     icon: Icons.assignment_turned_in_outlined,
                     title: 'My Requests',
-                    subtitle: 'Track request status',
+                    subtitle: 'Track live request status',
+                    onTap: onRequestsTap,
                   ),
                 ),
               ],
             ),
+
             const SizedBox(height: 22),
             const Text(
-              'Nearby Donation',
+              'Latest Food Posts',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
@@ -197,81 +322,43 @@ class _OrganizationHomeTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 16,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    height: 52,
-                    width: 52,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F1FD),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.fastfood_outlined,
-                      color: primary,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'No nearby donation yet',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            color: titleColor,
-                          ),
-                        ),
-                        SizedBox(height: 5),
-                        Text(
-                          'When donors post food near your area, it will appear here.',
-                          style: TextStyle(
-                            color: bodyColor,
-                            fontSize: 13.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F1FD),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: const Text(
-                      'New',
-                      style: TextStyle(
-                        color: primary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('food_posts')
+                  .orderBy('createdAt', descending: true)
+                  .limit(3)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                final docs = snapshot.data?.docs ?? [];
+
+                if (docs.isEmpty) {
+                  return _EmptyCard(
+                    icon: Icons.fastfood_outlined,
+                    title: 'No food posts yet',
+                    subtitle:
+                        'When donors publish food posts, they will appear here.',
+                  );
+                }
+
+                return Column(
+                  children: docs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return _LatestFoodCard(
+                      foodName: (data['foodName'] ?? 'Food Item').toString(),
+                      donorName: (data['donorName'] ?? 'Donor').toString(),
+                      quantity: (data['quantity'] ?? 'Not specified')
+                          .toString(),
+                      location: (data['location'] ?? 'No location').toString(),
+                    );
+                  }).toList(),
+                );
+              },
             ),
+
             const SizedBox(height: 22),
             const Text(
-              'Recent Activity',
+              'Recent Notifications',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
@@ -279,10 +366,36 @@ class _OrganizationHomeTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            const _OrgActivityTile(
-              title: 'No recent activity',
-              subtitle:
-                  'Your recent requests and collections will appear here.',
+
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('notifications')
+                  .where('userId', isEqualTo: user.uid)
+                  .orderBy('createdAt', descending: true)
+                  .limit(3)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                final docs = snapshot.data?.docs ?? [];
+
+                if (docs.isEmpty) {
+                  return _EmptyCard(
+                    icon: Icons.notifications_none_rounded,
+                    title: 'No notifications yet',
+                    subtitle:
+                        'Request updates and important alerts will appear here.',
+                  );
+                }
+
+                return Column(
+                  children: docs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return _NotificationPreviewCard(
+                      title: (data['title'] ?? '').toString(),
+                      body: (data['body'] ?? '').toString(),
+                    );
+                  }).toList(),
+                );
+              },
             ),
           ],
         ),
@@ -382,9 +495,7 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
     if (isLoading) {
       return const Scaffold(
         backgroundColor: background,
-        body: Center(
-          child: CircularProgressIndicator(color: primary),
-        ),
+        body: Center(child: CircularProgressIndicator(color: primary)),
       );
     }
 
@@ -407,10 +518,7 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
               const SizedBox(height: 6),
               const Text(
                 'Manage your NGO details, contact information and service area.',
-                style: TextStyle(
-                  fontSize: 14.5,
-                  color: bodyColor,
-                ),
+                style: TextStyle(fontSize: 14.5, color: bodyColor),
               ),
               const SizedBox(height: 18),
               Container(
@@ -421,7 +529,7 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                   borderRadius: BorderRadius.circular(26),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha:0.04),
+                      color: Colors.black.withOpacity(0.04),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
@@ -498,13 +606,13 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                         onPressed: () async {
                           final result =
                               await Navigator.push<Map<String, String>>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => EditOrganizationProfileScreen(
-                                initialData: profileData,
-                              ),
-                            ),
-                          );
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => EditOrganizationProfileScreen(
+                                    initialData: profileData,
+                                  ),
+                                ),
+                              );
 
                           if (!mounted) return;
 
@@ -530,9 +638,7 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                                 ),
                                 content: const Text(
                                   'Profile updated successfully',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                               ),
                             );
@@ -556,26 +662,6 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: const [
-                  Expanded(
-                    child: _OrgInfoStatCard(
-                      value: '0',
-                      label: 'Collected',
-                      icon: Icons.inventory_2_outlined,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _OrgInfoStatCard(
-                      value: '0',
-                      label: 'Active Requests',
-                      icon: Icons.assignment_outlined,
-                    ),
-                  ),
-                ],
               ),
               const SizedBox(height: 18),
               const _ProfileSectionTitle(title: 'Contact Information'),
@@ -619,57 +705,6 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              const _ProfileSectionTitle(title: 'Organization Details'),
-              const SizedBox(height: 12),
-              _ProfileInfoCard(
-                children: [
-                  _ProfileInfoTile(
-                    icon: Icons.info_outline_rounded,
-                    title: 'About',
-                    value: _displayValue('about'),
-                  ),
-                  const _ProfileDivider(),
-                  _ProfileInfoTile(
-                    icon: Icons.access_time_outlined,
-                    title: 'Operating Hours',
-                    value: _displayValue('hours'),
-                  ),
-                  const _ProfileDivider(),
-                  _ProfileInfoTile(
-                    icon: Icons.local_shipping_outlined,
-                    title: 'Pickup Capability',
-                    value: _displayValue('pickup'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              const _ProfileSectionTitle(title: 'Account Settings'),
-              const SizedBox(height: 12),
-              _ProfileInfoCard(
-                children: [
-                  _SettingTile(
-                    icon: Icons.notifications_none_rounded,
-                    title: 'Notifications',
-                    subtitle: 'Manage alerts and updates',
-                    onTap: () {},
-                  ),
-                  const _ProfileDivider(),
-                  _SettingTile(
-                    icon: Icons.lock_outline_rounded,
-                    title: 'Privacy & Security',
-                    subtitle: 'Change password and security settings',
-                    onTap: () {},
-                  ),
-                  const _ProfileDivider(),
-                  _SettingTile(
-                    icon: Icons.help_outline_rounded,
-                    title: 'Help & Support',
-                    subtitle: 'Get help or report a problem',
-                    onTap: () {},
-                  ),
-                ],
-              ),
             ],
           ),
         ),
@@ -678,12 +713,12 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
   }
 }
 
-class _OrgInfoStatCard extends StatelessWidget {
+class _DashboardStatCard extends StatelessWidget {
   final String value;
   final String label;
   final IconData icon;
 
-  const _OrgInfoStatCard({
+  const _DashboardStatCard({
     required this.value,
     required this.label,
     required this.icon,
@@ -696,13 +731,13 @@ class _OrgInfoStatCard extends StatelessWidget {
     const Color bodyColor = Color(0xFF6B7280);
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha:0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 14,
             offset: const Offset(0, 8),
           ),
@@ -723,9 +758,271 @@ class _OrgInfoStatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: bodyColor, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const Color titleColor = Color(0xFF1D2939);
+    const Color bodyColor = Color(0xFF6B7280);
+    const Color primary = Color(0xFF1565C0);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 34, color: primary),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: titleColor,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12.5, color: bodyColor),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LatestFoodCard extends StatelessWidget {
+  final String foodName;
+  final String donorName;
+  final String quantity;
+  final String location;
+
+  const _LatestFoodCard({
+    required this.foodName,
+    required this.donorName,
+    required this.quantity,
+    required this.location,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const Color primary = Color(0xFF1565C0);
+    const Color titleColor = Color(0xFF1D2939);
+    const Color bodyColor = Color(0xFF6B7280);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 52,
+            width: 52,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F1FD),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.fastfood_outlined, color: primary),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  foodName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: titleColor,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  'By $donorName',
+                  style: const TextStyle(color: bodyColor, fontSize: 13.5),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '$quantity • $location',
+                  style: const TextStyle(color: bodyColor, fontSize: 13.5),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NotificationPreviewCard extends StatelessWidget {
+  final String title;
+  final String body;
+
+  const _NotificationPreviewCard({required this.title, required this.body});
+
+  @override
+  Widget build(BuildContext context) {
+    const Color primary = Color(0xFF1565C0);
+    const Color titleColor = Color(0xFF1D2939);
+    const Color bodyColor = Color(0xFF6B7280);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 44,
+            width: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F1FD),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.notifications_none_rounded, color: primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
+                    fontSize: 14.5,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  body,
+                  style: const TextStyle(
+                    color: bodyColor,
+                    fontSize: 13.5,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _EmptyCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const Color primary = Color(0xFF1565C0);
+    const Color titleColor = Color(0xFF1D2939);
+    const Color bodyColor = Color(0xFF6B7280);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 42, color: primary),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
             style: const TextStyle(
               color: bodyColor,
               fontSize: 13.5,
+              height: 1.6,
             ),
           ),
         ],
@@ -765,7 +1062,7 @@ class _ProfileInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 14,
             offset: const Offset(0, 8),
           ),
@@ -838,219 +1135,12 @@ class _ProfileInfoTile extends StatelessWidget {
   }
 }
 
-class _SettingTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _SettingTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const Color primary = Color(0xFF1565C0);
-    const Color titleColor = Color(0xFF1D2939);
-    const Color bodyColor = Color(0xFF6B7280);
-
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      leading: Container(
-        height: 42,
-        width: 42,
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8F1FD),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(icon, color: primary),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontWeight: FontWeight.w800,
-          color: titleColor,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(
-          color: bodyColor,
-          fontSize: 13,
-        ),
-      ),
-      trailing: const Icon(
-        Icons.chevron_right_rounded,
-        color: bodyColor,
-      ),
-    );
-  }
-}
-
 class _ProfileDivider extends StatelessWidget {
   const _ProfileDivider();
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(
-      height: 1,
-      thickness: 1,
-      color: Color(0xFFF1F1F1),
-    );
-  }
-}
-
-class _OrgStatItem extends StatelessWidget {
-  final String value;
-  final String label;
-
-  const _OrgStatItem({
-    required this.value,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13.5,
-            color: Colors.white70,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _OrgQuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _OrgQuickActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const Color titleColor = Color(0xFF1D2939);
-    const Color bodyColor = Color(0xFF6B7280);
-    const Color primary = Color(0xFF1565C0);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 34, color: primary),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: titleColor,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: bodyColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OrgActivityTile extends StatelessWidget {
-  final String title;
-  final String subtitle;
-
-  const _OrgActivityTile({
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const Color primary = Color(0xFF1565C0);
-    const Color titleColor = Color(0xFF1D2939);
-    const Color bodyColor = Color(0xFF6B7280);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: const Color(0xFFE8F1FD),
-            child: Icon(
-              Icons.local_shipping_outlined,
-              color: primary.withValues(alpha: 0.95),
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    color: titleColor,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: bodyColor,
-                    fontSize: 13.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return const Divider(height: 1, thickness: 1, color: Color(0xFFF1F1F1));
   }
 }
 
