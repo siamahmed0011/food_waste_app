@@ -50,7 +50,12 @@ class _OrganizationRequestsScreenState
     await FirebaseFirestore.instance
         .collection('pickup_requests')
         .doc(requestId)
-        .update({'status': 'cancelled', 'updatedAt': Timestamp.now()});
+        .update({
+        'status': 'cancelled',
+        'pickupStatus': 'cancelled',
+        'updatedAt': Timestamp.now(),
+        'pickupUpdatedAt': Timestamp.now(),
+      });
 
     final donorId = (data['donorId'] ?? '').toString();
     if (donorId.isNotEmpty) {
@@ -117,7 +122,66 @@ class _OrganizationRequestsScreenState
         return Icons.hourglass_top_rounded;
     }
   }
+Future<void> schedulePickup({
+  required BuildContext context,
+  required String requestId,
+}) async {
+  DateTime? selectedDate;
+  TimeOfDay? selectedTime;
 
+  selectedDate = await showDatePicker(
+    context: context,
+    initialDate: DateTime.now(),
+    firstDate: DateTime.now(),
+    lastDate: DateTime.now().add(const Duration(days: 30)),
+  );
+
+  if (selectedDate == null) return;
+
+  selectedTime = await showTimePicker(
+    context: context,
+    initialTime: TimeOfDay.now(),
+  );
+
+  if (selectedTime == null) return;
+
+  await FirebaseFirestore.instance
+      .collection('pickup_requests')
+      .doc(requestId)
+      .update({
+    'pickupStatus': 'scheduled',
+    'pickupDate': DateFormat('dd MMM yyyy').format(selectedDate),
+    'pickupTime': selectedTime.format(context),
+    'updatedAt': Timestamp.now(),
+    'pickupUpdatedAt': Timestamp.now(),
+  });
+
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Pickup scheduled')),
+  );
+}
+Future<void> markOnTheWay(String requestId) async {
+  await FirebaseFirestore.instance
+      .collection('pickup_requests')
+      .doc(requestId)
+      .update({
+    'pickupStatus': 'on_the_way',
+    'updatedAt': Timestamp.now(),
+    'pickupUpdatedAt': Timestamp.now(),
+  });
+}
+
+Future<void> markCompleted(String requestId) async {
+  await FirebaseFirestore.instance
+      .collection('pickup_requests')
+      .doc(requestId)
+      .update({
+    'pickupStatus': 'completed',
+    'updatedAt': Timestamp.now(),
+    'pickupUpdatedAt': Timestamp.now(),
+  });
+}
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -366,14 +430,15 @@ class _OrganizationRequestsScreenState
                     itemBuilder: (context, index) {
                       final doc = docs[index];
                       final data = doc.data() as Map<String, dynamic>;
-
+                      final requestId = doc.id;
                       final foodName = (data['foodName'] ?? '').toString();
                       final donorName = (data['donorName'] ?? '').toString();
                       final location = (data['location'] ?? '').toString();
                       final quantity = (data['quantity'] ?? '').toString();
                       final status = (data['status'] ?? '').toString();
                       final updatedAt = _formatTime(data['updatedAt']);
-
+                      final pickupStatus = (data['pickupStatus'] ?? '').toString();
+                      final pickupTime = (data['pickupTime'] ?? '').toString();
                       return Container(
                         margin: const EdgeInsets.only(bottom: 14),
                         padding: const EdgeInsets.all(16),
@@ -421,8 +486,13 @@ class _OrganizationRequestsScreenState
                                     borderRadius: BorderRadius.circular(30),
                                   ),
                                   child: Text(
-                                    status[0].toUpperCase() +
-                                        status.substring(1),
+                                    status == 'accepted' && pickupStatus == 'scheduled'
+                                    ? 'Scheduled'
+                                    : status == 'accepted' && pickupStatus == 'on_the_way'
+                                        ? 'On the Way'
+                                        : status == 'accepted' && pickupStatus == 'completed'
+                                            ? 'Completed'
+                                            : status[0].toUpperCase() + status.substring(1),
                                     style: TextStyle(
                                       color: _statusColor(status),
                                       fontWeight: FontWeight.w700,
@@ -494,6 +564,34 @@ class _OrganizationRequestsScreenState
                                 ),
                               ),
                             ],
+                            if (status == 'accepted' && pickupStatus == 'accepted') ...[
+                            const SizedBox(height: 14),
+                            ElevatedButton(
+                              onPressed: () {
+                                schedulePickup(
+                                  context: context,
+                                  requestId: requestId,
+                                );
+                              },
+                              child: const Text('Schedule Pickup'),
+                            ),
+                          ],
+
+                          if (status == 'accepted' && pickupStatus == 'scheduled') ...[
+                            const SizedBox(height: 14),
+                            ElevatedButton(
+                              onPressed: () => markOnTheWay(requestId),
+                              child: const Text('On the Way'),
+                            ),
+                          ],
+
+                          if (status == 'accepted' && pickupStatus == 'on_the_way') ...[
+                            const SizedBox(height: 14),
+                            ElevatedButton(
+                              onPressed: () => markCompleted(requestId),
+                              child: const Text('Completed'),
+                            ),
+                          ],
                           ],
                         ),
                       );
