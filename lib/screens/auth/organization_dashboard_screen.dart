@@ -407,13 +407,626 @@ class _OrganizationHomeTab extends StatelessWidget {
 class _OrganizationHistoryTab extends StatelessWidget {
   const _OrganizationHistoryTab();
 
+  static const Color primary = Color(0xFF1565C0);
+  static const Color background = Color(0xFFF4F7FC);
+  static const Color titleColor = Color(0xFF102A43);
+  static const Color bodyColor = Color(0xFF6B7280);
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'accepted':
+        return const Color(0xFF16A34A);
+      case 'declined':
+        return const Color(0xFFDC2626);
+      case 'cancelled':
+        return const Color(0xFFF59E0B);
+      case 'collected':
+        return const Color(0xFF0F766E);
+      default:
+        return primary;
+    }
+  }
+
+  Color _statusBg(String status) {
+    switch (status) {
+      case 'accepted':
+        return const Color(0xFFDCFCE7);
+      case 'declined':
+        return const Color(0xFFFEE2E2);
+      case 'cancelled':
+        return const Color(0xFFFEF3C7);
+      case 'collected':
+        return const Color(0xFFCCFBF1);
+      default:
+        return const Color(0xFFDBEAFE);
+    }
+  }
+
+  IconData _statusIcon(String status) {
+    switch (status) {
+      case 'accepted':
+        return Icons.check_circle_rounded;
+      case 'declined':
+        return Icons.cancel_rounded;
+      case 'cancelled':
+        return Icons.remove_circle_outline_rounded;
+      case 'collected':
+        return Icons.inventory_2_rounded;
+      default:
+        return Icons.history_rounded;
+    }
+  }
+
+  String _formatTime(dynamic value) {
+    if (value is Timestamp) {
+      final dt = value.toDate();
+      final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final period = dt.hour >= 12 ? 'PM' : 'AM';
+      final day = dt.day.toString().padLeft(2, '0');
+      final month = dt.month.toString().padLeft(2, '0');
+      return '$day/$month/${dt.year} • $hour:$minute $period';
+    }
+    return 'Not available';
+  }
+
+  Future<void> _deleteHistoryItem(BuildContext context, String docId) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          title: const Text(
+            'Delete History',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+          content: const Text(
+            'Are you sure you want to delete this history item?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete == true) {
+      await FirebaseFirestore.instance
+          .collection('pickup_requests')
+          .doc(docId)
+          .delete();
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('History item deleted'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const _OrgSimpleTabWrapper(
-      title: 'History',
-      subtitle:
-          'Collected donation records and completed pickups will appear here.',
-      icon: Icons.history_rounded,
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        backgroundColor: background,
+        body: Center(
+          child: Text(
+            'Please sign in first',
+            style: TextStyle(color: bodyColor),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: background,
+      body: SafeArea(
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('pickup_requests')
+              .where('organizationId', isEqualTo: user.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: primary),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'Error: ${snapshot.error}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: bodyColor,
+                      height: 1.6,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            final allDocs = snapshot.data?.docs ?? [];
+
+            final historyDocs = allDocs.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final status = (data['status'] ?? '').toString();
+              return status == 'accepted' ||
+                  status == 'declined' ||
+                  status == 'cancelled' ||
+                  status == 'collected';
+            }).toList();
+
+            historyDocs.sort((a, b) {
+              final aData = a.data() as Map<String, dynamic>;
+              final bData = b.data() as Map<String, dynamic>;
+
+              final aTime =
+                  (aData['updatedAt'] as Timestamp?)?.millisecondsSinceEpoch ??
+                      0;
+              final bTime =
+                  (bData['updatedAt'] as Timestamp?)?.millisecondsSinceEpoch ??
+                      0;
+
+              return bTime.compareTo(aTime);
+            });
+
+            int acceptedCount = 0;
+            int declinedCount = 0;
+            int cancelledCount = 0;
+            int collectedCount = 0;
+
+            for (final doc in historyDocs) {
+              final data = doc.data() as Map<String, dynamic>;
+              final status = (data['status'] ?? '').toString();
+
+              if (status == 'accepted') acceptedCount++;
+              if (status == 'declined') declinedCount++;
+              if (status == 'cancelled') cancelledCount++;
+              if (status == 'collected') collectedCount++;
+            }
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'History',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'See all completed and past request activities in real time.',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      color: bodyColor,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF1E88E5),
+                          Color(0xFF1565C0),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(26),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primary.withOpacity(0.20),
+                          blurRadius: 18,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Color(0x33FFFFFF),
+                          child: Icon(
+                            Icons.history_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ),
+                        SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Request History',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'All your old request outcomes in one place',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _HistorySummaryCard(
+                          title: 'Accepted',
+                          value: '$acceptedCount',
+                          icon: Icons.check_circle_outline,
+                          color: const Color(0xFF16A34A),
+                          bg: const Color(0xFFDCFCE7),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _HistorySummaryCard(
+                          title: 'Collected',
+                          value: '$collectedCount',
+                          icon: Icons.inventory_2_outlined,
+                          color: const Color(0xFF0F766E),
+                          bg: const Color(0xFFCCFBF1),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _HistorySummaryCard(
+                          title: 'Declined',
+                          value: '$declinedCount',
+                          icon: Icons.close_rounded,
+                          color: const Color(0xFFDC2626),
+                          bg: const Color(0xFFFEE2E2),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _HistorySummaryCard(
+                          title: 'Cancelled',
+                          value: '$cancelledCount',
+                          icon: Icons.cancel_outlined,
+                          color: const Color(0xFFF59E0B),
+                          bg: const Color(0xFFFEF3C7),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Recent Activity',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  if (historyDocs.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 14,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(
+                            Icons.history_rounded,
+                            size: 44,
+                            color: primary,
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'No history yet',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: titleColor,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Accepted, declined, cancelled and collected requests will appear here.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: bodyColor,
+                              fontSize: 14,
+                              height: 1.6,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Column(
+                      children: historyDocs.map((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+
+                        final foodName =
+                            (data['foodName'] ?? 'Food Item').toString();
+                        final donorName =
+                            (data['donorName'] ?? 'Donor').toString();
+                        final quantity =
+                            (data['quantity'] ?? 'Not specified').toString();
+                        final location =
+                            (data['location'] ?? 'No location').toString();
+                        final status =
+                            (data['status'] ?? 'unknown').toString();
+                        final updatedAt = _formatTime(data['updatedAt']);
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 14,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 23,
+                                    backgroundColor: _statusBg(status),
+                                    child: Icon(
+                                      _statusIcon(status),
+                                      color: _statusColor(status),
+                                      size: 22,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          foodName,
+                                          style: const TextStyle(
+                                            fontSize: 15.5,
+                                            fontWeight: FontWeight.w800,
+                                            color: titleColor,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _statusBg(status),
+                                            borderRadius:
+                                                BorderRadius.circular(30),
+                                          ),
+                                          child: Text(
+                                            status[0].toUpperCase() +
+                                                status.substring(1),
+                                            style: TextStyle(
+                                              color: _statusColor(status),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () =>
+                                        _deleteHistoryItem(context, doc.id),
+                                    icon: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: Colors.redAccent,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              _HistoryInfoRow(
+                                icon: Icons.person_outline_rounded,
+                                text: 'Donor: $donorName',
+                              ),
+                              const SizedBox(height: 8),
+                              _HistoryInfoRow(
+                                icon: Icons.inventory_2_outlined,
+                                text: 'Quantity: $quantity',
+                              ),
+                              const SizedBox(height: 8),
+                              _HistoryInfoRow(
+                                icon: Icons.location_on_outlined,
+                                text: 'Location: $location',
+                              ),
+                              const SizedBox(height: 8),
+                              _HistoryInfoRow(
+                                icon: Icons.access_time_outlined,
+                                text: 'Updated: $updatedAt',
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _HistorySummaryCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final Color bg;
+
+  const _HistorySummaryCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.bg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: 42,
+            width: 42,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF102A43),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF6B7280),
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _HistoryInfoRow({
+    required this.icon,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const Color primary = Color(0xFF1565C0);
+    const Color bodyColor = Color(0xFF6B7280);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(width: 2),
+        Icon(icon, size: 18, color: primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: bodyColor,
+              fontSize: 13.5,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
