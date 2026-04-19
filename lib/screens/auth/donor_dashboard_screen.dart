@@ -844,7 +844,6 @@ class _RequestCard extends StatelessWidget {
   final VoidCallback onSecondaryTap;
 
   const _RequestCard({
-    super.key,
     required this.ngoName,
     required this.details,
     required this.status,

@@ -550,7 +550,7 @@ class BrowseFoodScreen extends StatelessWidget {
                                       height: 190,
                                       width: double.infinity,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
+                                      errorBuilder: (_, _, _) =>
                                           _buildImagePlaceholder(),
                                     )
                                   : _buildImagePlaceholder(),

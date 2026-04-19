@@ -436,11 +436,21 @@ class _HomeView extends StatelessWidget {
             desc: 'Share extra food easily from your dashboard.',
           ),
           const SizedBox(height: 14),
-          const _FeatureCard(
-            icon: Icons.local_shipping_rounded,
-            title: 'Request pickups',
-            desc: 'Organizations can request food instantly.',
-          ),
+                      GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SignInScreen(),
+                  ),
+                );
+              },
+              child: const _FeatureCard(
+                icon: Icons.local_shipping_rounded,
+                title: 'Request pickups',
+                desc: 'Organizations can request food instantly.',
+              ),
+            ),
           const SizedBox(height: 14),
           const _FeatureCard(
             icon: Icons.volunteer_activism_rounded,
