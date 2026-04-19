@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'create_food_screen.dart';
 import 'donor_profile_screen.dart';
+import 'donor_notifications_screen.dart';
 
 class DonorDashboardScreen extends StatefulWidget {
   const DonorDashboardScreen({super.key});
@@ -135,8 +136,15 @@ class _DonorHomeTab extends StatelessWidget {
                     ],
                   ),
                 ),
-                IconButton(
-                  onPressed: () {},
+               IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DonorNotificationsScreen(),
+                      ),
+                    );
+                  },
                   icon: const Icon(
                     Icons.notifications_none_rounded,
                     size: 28,
