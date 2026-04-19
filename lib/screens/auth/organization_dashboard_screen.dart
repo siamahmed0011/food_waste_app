@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'browse_food_screen.dart';
 import 'organization_requests_screen.dart';
 import 'edit_organization_profile_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'welcome_screen.dart';
 
 class OrganizationDashboardScreen extends StatefulWidget {
   const OrganizationDashboardScreen({super.key});
@@ -1030,9 +1032,8 @@ class _HistoryInfoRow extends StatelessWidget {
     );
   }
 }
-
 class _OrganizationProfileTab extends StatefulWidget {
-  const _OrganizationProfileTab();
+  const _OrganizationProfileTab({super.key});
 
   @override
   State<_OrganizationProfileTab> createState() =>
@@ -1040,288 +1041,504 @@ class _OrganizationProfileTab extends StatefulWidget {
 }
 
 class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
-  Map<String, String> profileData = {};
-  bool isLoading = true;
+  static const Color primary = Color(0xFF1565C0);
+  static const Color bg = Color(0xFFF4F7FC);
+  static const Color titleColor = Color(0xFF102A43);
+  static const Color bodyColor = Color(0xFF6B7280);
+
+  final _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _websiteController = TextEditingController();
+  final TextEditingController _serviceAreaController = TextEditingController();
+  final TextEditingController _aboutController = TextEditingController();
+
+  bool _isEditing = false;
+  bool _isSaving = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadProfile();
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _websiteController.dispose();
+    _serviceAreaController.dispose();
+    _aboutController.dispose();
+    super.dispose();
   }
 
-  Future<void> _loadProfile() async {
+  void _fillControllers(Map<String, dynamic> data) {
+    if (_isEditing) return;
+    _nameController.text = (data['name'] ?? '').toString();
+    _emailController.text = (data['email'] ?? '').toString();
+    _phoneController.text = (data['phone'] ?? '').toString();
+    _addressController.text = (data['address'] ?? '').toString();
+    _websiteController.text = (data['website'] ?? '').toString();
+    _serviceAreaController.text = (data['serviceArea'] ?? '').toString();
+    _aboutController.text = (data['about'] ?? '').toString();
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      setState(() {
-        isLoading = false;
-      });
-      return;
-    }
+    if (user == null) return;
+
+    setState(() {
+      _isSaving = true;
+    });
 
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'role': 'organization',
+        'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'address': _addressController.text.trim(),
+        'website': _websiteController.text.trim(),
+        'serviceArea': _serviceAreaController.text.trim(),
+        'about': _aboutController.text.trim(),
+        'updatedAt': Timestamp.now(),
+      }, SetOptions(merge: true));
 
       if (!mounted) return;
 
-      if (doc.exists && doc.data() != null) {
-        final raw = doc.data()!;
-        final converted = <String, String>{};
+      setState(() {
+        _isEditing = false;
+      });
 
-        for (final entry in raw.entries) {
-          converted[entry.key] = entry.value?.toString() ?? '';
-        }
-
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Save failed: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
         setState(() {
-          profileData = converted;
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          profileData = {};
-          isLoading = false;
+          _isSaving = false;
         });
       }
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        profileData = {};
-        isLoading = false;
-      });
     }
   }
 
-  String _displayValue(String key) {
-    final value = (profileData[key] ?? '').trim();
-    return value.isEmpty ? 'Not added yet' : value;
+  Future<void> _logout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          title: const Text(
+            'Logout',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+          content: const Text(
+            'Are you sure you want to logout?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout != true) return;
+
+    await FirebaseAuth.instance.signOut();
+
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => WelcomeScreen()),
+      (route) => false,
+    );
+  }
+
+  Widget _buildField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required IconData icon,
+    int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        enabled: _isEditing,
+        maxLines: maxLines,
+        keyboardType: keyboardType,
+        validator: validator,
+        style: const TextStyle(
+          color: titleColor,
+          fontSize: 15.5,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          prefixIcon: Icon(icon, color: primary),
+          filled: true,
+          fillColor: _isEditing ? Colors.white : const Color(0xFFF9FBFF),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: primary, width: 1.4),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 18,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFF1565C0);
-    const Color titleColor = Color(0xFF1D2939);
-    const Color bodyColor = Color(0xFF6B7280);
-    const Color background = Color(0xFFF6F7F9);
+    final user = FirebaseAuth.instance.currentUser;
 
-    if (isLoading) {
+    if (user == null) {
       return const Scaffold(
-        backgroundColor: background,
-        body: Center(child: CircularProgressIndicator(color: primary)),
+        body: Center(
+          child: Text('Please login first'),
+        ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Organization Profile',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: titleColor,
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: bg,
+            body: Center(
+              child: CircularProgressIndicator(color: primary),
+            ),
+          );
+        }
+
+        final data = snapshot.data?.data() as Map<String, dynamic>? ?? {};
+        _fillControllers(data);
+
+        final displayName = _nameController.text.trim().isEmpty
+            ? 'NGO Name'
+            : _nameController.text.trim();
+
+        final displayEmail = _emailController.text.trim().isEmpty
+            ? 'No email added yet'
+            : _emailController.text.trim();
+
+        return Scaffold(
+          backgroundColor: bg,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            surfaceTintColor: Colors.white,
+            centerTitle: true,
+            title: const Text(
+              'NGO Profile',
+              style: TextStyle(
+                color: titleColor,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isEditing = !_isEditing;
+                    if (!_isEditing) {
+                      _fillControllers(data);
+                    }
+                  });
+                },
+                child: Text(
+                  _isEditing ? 'Cancel' : 'Edit',
+                  style: const TextStyle(
+                    color: primary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Manage your NGO details, contact information and service area.',
-                style: TextStyle(fontSize: 14.5, color: bodyColor),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(26),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
+              const SizedBox(width: 6),
+            ],
+          ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+              child: Form(
+                key: _formKey,
                 child: Column(
                   children: [
-                    const CircleAvatar(
-                      radius: 42,
-                      backgroundColor: Color(0xFFE8F1FD),
-                      child: Icon(
-                        Icons.apartment_rounded,
-                        size: 42,
-                        color: primary,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      (profileData['name'] ?? '').trim().isEmpty
-                          ? 'Organization Name'
-                          : profileData['name']!.trim(),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: titleColor,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
                     Container(
+                      width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
+                        horizontal: 20,
+                        vertical: 26,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8F1FD),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.verified_rounded,
-                            color: primary,
-                            size: 16,
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF1E88E5),
+                            Color(0xFF1565C0),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: primary.withOpacity(0.22),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                          SizedBox(width: 6),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 86,
+                            width: 86,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.16),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.apartment_rounded,
+                              size: 42,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
                           Text(
-                            'Organization Account',
-                            style: TextStyle(
-                              color: primary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12.5,
+                            displayName,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            displayEmail,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.14),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.verified_user_outlined,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _isEditing
+                                      ? 'Editing enabled'
+                                      : 'Real-time profile data',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Text(
-                      (profileData['about'] ?? '').trim().isEmpty
-                          ? 'No description added yet'
-                          : profileData['about']!.trim(),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: bodyColor,
-                        fontSize: 14,
-                        height: 1.6,
-                      ),
+                    const SizedBox(height: 22),
+                    _buildField(
+                      label: 'NGO Name',
+                      hint: 'Enter NGO name',
+                      controller: _nameController,
+                      icon: Icons.apartment_rounded,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'NGO name is required';
+                        }
+                        return null;
+                      },
                     ),
-                    const SizedBox(height: 18),
+                    _buildField(
+                      label: 'Email',
+                      hint: 'Enter email',
+                      controller: _emailController,
+                      icon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    _buildField(
+                      label: 'Phone',
+                      hint: 'Enter phone number',
+                      controller: _phoneController,
+                      icon: Icons.call_outlined,
+                      keyboardType: TextInputType.phone,
+                    ),
+                    _buildField(
+                      label: 'Address',
+                      hint: 'Enter full address',
+                      controller: _addressController,
+                      icon: Icons.location_on_outlined,
+                      maxLines: 3,
+                    ),
+                    _buildField(
+                      label: 'Website',
+                      hint: 'Enter website',
+                      controller: _websiteController,
+                      icon: Icons.language_outlined,
+                    ),
+                    _buildField(
+                      label: 'Service Area',
+                      hint: 'e.g. Mirpur, Uttara, Dhanmondi',
+                      controller: _serviceAreaController,
+                      icon: Icons.map_outlined,
+                    ),
+                    _buildField(
+                      label: 'About NGO',
+                      hint: 'Write short description about NGO',
+                      controller: _aboutController,
+                      icon: Icons.info_outline_rounded,
+                      maxLines: 4,
+                    ),
+                    const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
+                      height: 56,
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final result =
-                              await Navigator.push<Map<String, String>>(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => EditOrganizationProfileScreen(
-                                    initialData: profileData,
+                        onPressed: (_isEditing && !_isSaving)
+                            ? _saveProfile
+                            : null,
+                        icon: _isSaving
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
                                   ),
                                 ),
-                              );
-
-                          if (!mounted) return;
-
-                          if (result != null) {
-                            final user = FirebaseAuth.instance.currentUser;
-                            if (user != null) {
-                              await FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(user.uid)
-                                  .set(result, SetOptions(merge: true));
-                            }
-
-                            await _loadProfile();
-
-                            if (!mounted) return;
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                backgroundColor: primary,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                content: const Text(
-                                  'Profile updated successfully',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                              )
+                            : const Icon(Icons.save_outlined),
+                        label: Text(
+                          _isSaving ? 'Saving...' : 'Save Changes',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        icon: const Icon(Icons.edit_outlined),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary,
+                          disabledBackgroundColor: Colors.blue.shade200,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: OutlinedButton.icon(
+                        onPressed: _logout,
+                        icon: const Icon(Icons.logout_rounded),
                         label: const Text(
-                          'Edit Profile',
-                          style: TextStyle(fontWeight: FontWeight.w700),
+                          'Logout',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: primary,
+                          side: const BorderSide(color: primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
-              const _ProfileSectionTitle(title: 'Contact Information'),
-              const SizedBox(height: 12),
-              _ProfileInfoCard(
-                children: [
-                  _ProfileInfoTile(
-                    icon: Icons.email_outlined,
-                    title: 'Email',
-                    value: _displayValue('email'),
-                  ),
-                  const _ProfileDivider(),
-                  _ProfileInfoTile(
-                    icon: Icons.call_outlined,
-                    title: 'Phone',
-                    value: _displayValue('phone'),
-                  ),
-                  const _ProfileDivider(),
-                  _ProfileInfoTile(
-                    icon: Icons.language_outlined,
-                    title: 'Website',
-                    value: _displayValue('website'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              const _ProfileSectionTitle(title: 'Location & Service Area'),
-              const SizedBox(height: 12),
-              _ProfileInfoCard(
-                children: [
-                  _ProfileInfoTile(
-                    icon: Icons.location_on_outlined,
-                    title: 'Address',
-                    value: _displayValue('address'),
-                  ),
-                  const _ProfileDivider(),
-                  _ProfileInfoTile(
-                    icon: Icons.map_outlined,
-                    title: 'Service Area',
-                    value: _displayValue('serviceArea'),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
