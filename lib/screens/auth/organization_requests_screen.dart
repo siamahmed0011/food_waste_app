@@ -145,16 +145,43 @@ Future<void> schedulePickup({
 
   if (selectedTime == null) return;
 
+  final requestDoc = await FirebaseFirestore.instance
+      .collection('pickup_requests')
+      .doc(requestId)
+      .get();
+
+  final requestData = requestDoc.data() ?? {};
+  final donorId = (requestData['donorId'] ?? '').toString();
+  final foodName = (requestData['foodName'] ?? 'food').toString();
+  final organizationName =
+      (requestData['organizationName'] ?? 'Organization').toString();
+
+  final formattedDate = DateFormat('dd MMM yyyy').format(selectedDate);
+  final formattedTime = selectedTime.format(context);
+
   await FirebaseFirestore.instance
       .collection('pickup_requests')
       .doc(requestId)
       .update({
     'pickupStatus': 'scheduled',
-    'pickupDate': DateFormat('dd MMM yyyy').format(selectedDate),
-    'pickupTime': selectedTime.format(context),
+    'pickupDate': formattedDate,
+    'pickupTime': formattedTime,
     'updatedAt': Timestamp.now(),
     'pickupUpdatedAt': Timestamp.now(),
   });
+
+  if (donorId.isNotEmpty) {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'userId': donorId,
+      'title': 'Pickup scheduled',
+      'body': '$organizationName scheduled pickup for $foodName on $formattedDate at $formattedTime',
+      'type': 'pickup_scheduled',
+      'isRead': false,
+      'createdAt': Timestamp.now(),
+      'requestId': requestId,
+      'postId': (requestData['postId'] ?? '').toString(),
+    });
+  }
 
   if (!mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
@@ -162,6 +189,17 @@ Future<void> schedulePickup({
   );
 }
 Future<void> markOnTheWay(String requestId) async {
+  final requestDoc = await FirebaseFirestore.instance
+      .collection('pickup_requests')
+      .doc(requestId)
+      .get();
+
+  final requestData = requestDoc.data() ?? {};
+  final donorId = (requestData['donorId'] ?? '').toString();
+  final foodName = (requestData['foodName'] ?? 'food').toString();
+  final organizationName =
+      (requestData['organizationName'] ?? 'Organization').toString();
+
   await FirebaseFirestore.instance
       .collection('pickup_requests')
       .doc(requestId)
@@ -170,9 +208,33 @@ Future<void> markOnTheWay(String requestId) async {
     'updatedAt': Timestamp.now(),
     'pickupUpdatedAt': Timestamp.now(),
   });
+
+  if (donorId.isNotEmpty) {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'userId': donorId,
+      'title': 'Pickup on the way',
+      'body': '$organizationName is on the way to collect $foodName',
+      'type': 'pickup_on_the_way',
+      'isRead': false,
+      'createdAt': Timestamp.now(),
+      'requestId': requestId,
+      'postId': (requestData['postId'] ?? '').toString(),
+    });
+  }
 }
 
 Future<void> markCompleted(String requestId) async {
+  final requestDoc = await FirebaseFirestore.instance
+      .collection('pickup_requests')
+      .doc(requestId)
+      .get();
+
+  final requestData = requestDoc.data() ?? {};
+  final donorId = (requestData['donorId'] ?? '').toString();
+  final foodName = (requestData['foodName'] ?? 'food').toString();
+  final organizationName =
+      (requestData['organizationName'] ?? 'Organization').toString();
+
   await FirebaseFirestore.instance
       .collection('pickup_requests')
       .doc(requestId)
@@ -181,6 +243,19 @@ Future<void> markCompleted(String requestId) async {
     'updatedAt': Timestamp.now(),
     'pickupUpdatedAt': Timestamp.now(),
   });
+
+  if (donorId.isNotEmpty) {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'userId': donorId,
+      'title': 'Pickup completed',
+      'body': '$organizationName completed pickup for $foodName',
+      'type': 'pickup_completed',
+      'isRead': false,
+      'createdAt': Timestamp.now(),
+      'requestId': requestId,
+      'postId': (requestData['postId'] ?? '').toString(),
+    });
+  }
 }
   @override
   Widget build(BuildContext context) {
