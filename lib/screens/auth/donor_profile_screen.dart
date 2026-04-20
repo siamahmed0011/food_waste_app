@@ -12,9 +12,6 @@ class DonorProfileScreen extends StatefulWidget {
   State<DonorProfileScreen> createState() => _DonorProfileScreenState();
 }
 
-
-
-
 class _DonorProfileScreenState extends State<DonorProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
@@ -28,10 +25,12 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
   String? _imagePath;
 
   static const Color primaryGreen = Color(0xFF2E7D32);
+  static const Color accentGreen = Color(0xFF43A047);
   static const Color lightGreen = Color(0xFFE8F5E9);
-  static const Color bgColor = Color(0xFFF5F7F9);
+  static const Color bgColor = Color(0xFFF4F7F6);
   static const Color titleColor = Color(0xFF1D2939);
   static const Color subTitleColor = Color(0xFF667085);
+  static const Color cardColor = Colors.white;
 
   @override
   void initState() {
@@ -79,7 +78,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
         ),
         backgroundColor: primaryGreen,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: const EdgeInsets.all(16),
       ),
     );
@@ -100,6 +99,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
   }
 
   Future<void> _onSave() async {
+    if (!_isEditing) return;
     if (_formKey.currentState!.validate()) {
       await _saveProfileData();
     }
@@ -111,11 +111,11 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(22),
           ),
           title: const Text(
             'Logout',
-            style: TextStyle(fontWeight: FontWeight.w700),
+            style: TextStyle(fontWeight: FontWeight.w800),
           ),
           content: const Text(
             'Are you sure you want to logout from your account?',
@@ -123,12 +123,18 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 49, 218, 52),
+                backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -151,45 +157,177 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
     }
   }
 
-  Widget _buildProfileImage() {
-    ImageProvider? imageProvider;
-
+  ImageProvider? _getImageProvider() {
     if (_imagePath != null && _imagePath!.isNotEmpty) {
       final file = File(_imagePath!);
       if (file.existsSync()) {
-        imageProvider = FileImage(file);
+        return FileImage(file);
       }
     }
+    return null;
+  }
+
+  Widget _buildProfileImage() {
+    final imageProvider = _getImageProvider();
 
     return Stack(
       alignment: Alignment.bottomRight,
       children: [
-        CircleAvatar(
-          radius: 46,
-          backgroundColor: Colors.white.withOpacity(0.28),
-          backgroundImage: imageProvider,
-          child: imageProvider == null
-              ? const Icon(Icons.person, size: 46, color: Colors.white)
-              : null,
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withOpacity(0.9), width: 3),
+          ),
+          child: CircleAvatar(
+            radius: 44,
+            backgroundColor: Colors.white.withOpacity(0.18),
+            backgroundImage: imageProvider,
+            child: imageProvider == null
+                ? const Icon(Icons.person, size: 46, color: Colors.white)
+                : null,
+          ),
         ),
-        InkWell(
+        GestureDetector(
           onTap: _isEditing ? _pickImage : null,
-          borderRadius: BorderRadius.circular(100),
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: _isEditing ? Colors.white : Colors.grey.shade300,
+              color: _isEditing ? Colors.white : Colors.white54,
               shape: BoxShape.circle,
-              border: Border.all(color: primaryGreen, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.10),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: Icon(
-              Icons.camera_alt_outlined,
+              Icons.camera_alt_rounded,
               color: _isEditing ? primaryGreen : Colors.grey,
               size: 18,
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildHeaderCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [accentGreen, primaryGreen],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: primaryGreen.withOpacity(0.22),
+            blurRadius: 22,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildProfileImage(),
+          const SizedBox(height: 14),
+          Text(
+            _nameController.text.trim().isEmpty
+                ? 'Donor User'
+                : _nameController.text.trim(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _emailController.text.trim().isEmpty
+                ? 'No email added'
+                : _emailController.text.trim(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _MiniInfoCard(
+                  icon: Icons.volunteer_activism_outlined,
+                  title: 'Role',
+                  value: 'Donor',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _MiniInfoCard(
+                  icon: _isEditing ? Icons.edit_outlined : Icons.verified_user,
+                  title: 'Status',
+                  value: _isEditing ? 'Editing' : 'Active',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required String subtitle,
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: titleColor,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: subTitleColor,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...children,
+        ],
+      ),
     );
   }
 
@@ -202,39 +340,34 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
     int maxLines = 1,
     String? Function(String?)? validator,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
       child: TextFormField(
         controller: controller,
         enabled: _isEditing,
         keyboardType: keyboardType,
         maxLines: maxLines,
         validator: validator,
+        onChanged: (_) {
+          setState(() {});
+        },
         style: TextStyle(
           color: _isEditing ? titleColor : Colors.black87,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontSize: 15.5,
+          fontWeight: FontWeight.w600,
         ),
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
+          prefixIcon: Icon(icon, color: primaryGreen, size: 22),
           labelStyle: const TextStyle(
             color: subTitleColor,
+            fontWeight: FontWeight.w600,
+          ),
+          hintStyle: TextStyle(
+            color: Colors.grey.shade400,
             fontWeight: FontWeight.w500,
           ),
-          hintStyle: TextStyle(color: Colors.grey.shade400),
-          prefixIcon: Icon(icon, color: primaryGreen),
           filled: true,
           fillColor: _isEditing ? Colors.white : const Color(0xFFF9FAFB),
           enabledBorder: OutlineInputBorder(
@@ -266,6 +399,58 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
     );
   }
 
+  Widget _buildActionButtons() {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton.icon(
+            onPressed: _isEditing ? _onSave : null,
+            icon: const Icon(Icons.save_outlined),
+            label: Text(
+              _isEditing ? 'Save Changes' : 'Enable Edit First',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _isEditing
+                  ? primaryGreen
+                  : Colors.green.shade200,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: Colors.green.shade200,
+              disabledForegroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: OutlinedButton.icon(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout_rounded),
+            label: const Text(
+              'Logout',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.redAccent,
+              side: BorderSide(color: Colors.redAccent.withOpacity(0.35)),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -287,252 +472,187 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: bgColor,
         elevation: 0,
-        surfaceTintColor: Colors.white,
+        surfaceTintColor: bgColor,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: titleColor),
         ),
         centerTitle: true,
         title: const Text(
-          'My Profile',
+          'Donor Profile',
           style: TextStyle(
             color: titleColor,
-            fontSize: 24,
+            fontSize: 22,
             fontWeight: FontWeight.w800,
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _isEditing = !_isEditing;
-              });
-            },
-            child: Text(
-              _isEditing ? 'Cancel' : 'Edit',
-              style: const TextStyle(
-                color: primaryGreen,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  _isEditing = !_isEditing;
+                });
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: lightGreen,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text(
+                _isEditing ? 'Cancel' : 'Edit',
+                style: const TextStyle(
+                  color: primaryGreen,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14.5,
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 6),
         ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
           child: Form(
             key: _formKey,
             child: Column(
               children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 26,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF43A047), Color(0xFF2E7D32)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                _buildHeaderCard(),
+                const SizedBox(height: 20),
+                _buildSectionCard(
+                  title: 'Personal Information',
+                  subtitle: 'Manage your donor account details here.',
+                  children: [
+                    _buildInfoField(
+                      label: 'Full Name',
+                      controller: _nameController,
+                      icon: Icons.person_outline_rounded,
+                      hint: 'Enter your full name',
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter your full name';
+                        }
+                        return null;
+                      },
                     ),
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: primaryGreen.withOpacity(0.22),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      _buildProfileImage(),
-                      const SizedBox(height: 14),
-                      Text(
-                        _nameController.text.trim().isEmpty
-                            ? 'Donor User'
-                            : _nameController.text.trim(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _emailController.text.trim().isEmpty
-                            ? 'No email added'
-                            : _emailController.text.trim(),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.14),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.verified_user_outlined,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _isEditing
-                                  ? 'Editing enabled'
-                                  : 'Profile information',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                _buildInfoField(
-                  label: 'Full Name',
-                  controller: _nameController,
-                  icon: Icons.person_outline_rounded,
-                  hint: 'Enter your full name',
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your full name';
-                    }
-                    return null;
-                  },
-                ),
-                _buildInfoField(
-                  label: 'Email',
-                  controller: _emailController,
-                  icon: Icons.email_outlined,
-                  hint: 'Enter your email',
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                _buildInfoField(
-                  label: 'Phone Number',
-                  controller: _phoneController,
-                  icon: Icons.call_outlined,
-                  hint: 'Enter your phone number',
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your phone number';
-                    }
-                    if (value.trim().length < 11) {
-                      return 'Phone number is too short';
-                    }
-                    return null;
-                  },
-                ),
-                _buildInfoField(
-                  label: 'Address',
-                  controller: _addressController,
-                  icon: Icons.location_on_outlined,
-                  hint: 'Enter your address',
-                  maxLines: 3,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your address';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton.icon(
-                    onPressed: _onSave,
-                    icon: const Icon(Icons.save_outlined),
-                    label: const Text(
-                      'Save Changes',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    _buildInfoField(
+                      label: 'Email',
+                      controller: _emailController,
+                      icon: Icons.email_outlined,
+                      hint: 'Enter your email',
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Enter a valid email';
+                        }
+                        return null;
+                      },
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isEditing
-                          ? primaryGreen
-                          : Colors.green.shade200,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
+                    _buildInfoField(
+                      label: 'Phone Number',
+                      controller: _phoneController,
+                      icon: Icons.call_outlined,
+                      hint: 'Enter your phone number',
+                      keyboardType: TextInputType.phone,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter your phone number';
+                        }
+                        if (value.trim().length < 11) {
+                          return 'Phone number is too short';
+                        }
+                        return null;
+                      },
                     ),
-                  ),
+                    _buildInfoField(
+                      label: 'Address',
+                      controller: _addressController,
+                      icon: Icons.location_on_outlined,
+                      hint: 'Enter your address',
+                      maxLines: 3,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter your address';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: OutlinedButton.icon(
-                    onPressed: _logout,
-                    icon: const Icon(Icons.logout_rounded),
-                    label: const Text(
-                      'Logout',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color.fromARGB(255, 107, 216, 90),
-                      side: const BorderSide(color: Colors.redAccent),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                  ),
-                ),
+                const SizedBox(height: 18),
+                _buildActionButtons(),
                 const SizedBox(height: 14),
                 Text(
                   _isEditing
-                      ? 'You can now update your information and save it.'
+                      ? 'Editing mode is enabled. Update your information and tap Save Changes.'
                       : 'Tap Edit to update your profile information.',
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: subTitleColor,
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
+                    height: 1.4,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MiniInfoCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+
+  const _MiniInfoCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.16)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white, size: 20),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
