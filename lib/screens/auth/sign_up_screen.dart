@@ -67,11 +67,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
-      final userCredential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
+      final userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
 
       final uid = userCredential.user!.uid;
 
@@ -85,6 +85,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
           'city': cityController.text.trim(),
           'roadNo': roadController.text.trim(),
           'houseNo': houseController.text.trim(),
+          'address':
+              '${houseController.text.trim()} ${roadController.text.trim()}, ${cityController.text.trim()}, ${districtController.text.trim()}',
+          'imagePath': '',
           'createdAt': Timestamp.now(),
         });
 
@@ -120,15 +123,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
         message = e.message!;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Something went wrong: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Something went wrong: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -176,34 +179,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(
-        color: bodyColor,
-        fontSize: 14.5,
-      ),
+      hintStyle: const TextStyle(color: bodyColor, fontSize: 14.5),
       filled: true,
       fillColor: fieldBg,
       prefixIcon: prefixIcon != null
-          ? Icon(
-              prefixIcon,
-              color: bodyColor,
-              size: 21,
-            )
+          ? Icon(prefixIcon, color: bodyColor, size: 21)
           : null,
       suffixIcon: suffixIcon,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 16,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: const BorderSide(color: borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(
-          color: titleColor,
-          width: 1.2,
-        ),
+        borderSide: const BorderSide(color: titleColor, width: 1.2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
@@ -263,8 +253,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
               decoration: BoxDecoration(
-                color:
-                    isOrg ? const Color(0xFFF8F5FF) : const Color(0xFFF2F8F1),
+                color: isOrg
+                    ? const Color(0xFFF8F5FF)
+                    : const Color(0xFFF2F8F1),
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(34),
                 ),
@@ -598,10 +589,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       ? const Color(0xFF7B61FF)
                                       : primary,
                                   foregroundColor: Colors.white,
-                                  disabledBackgroundColor: (isOrg
-                                          ? const Color(0xFF7B61FF)
-                                          : primary)
-                                      .withValues(alpha: 0.5),
+                                  disabledBackgroundColor:
+                                      (isOrg
+                                              ? const Color(0xFF7B61FF)
+                                              : primary)
+                                          .withValues(alpha: 0.5),
                                   elevation: 0,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 16,
@@ -618,8 +610,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           strokeWidth: 2.6,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
+                                                Colors.white,
+                                              ),
                                         ),
                                       )
                                     : Text(
