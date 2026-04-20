@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/auth/donor_dashboard_screen.dart';
 import 'screens/auth/organization_dashboard_screen.dart';
-import 'screens/auth/auth_gate.dart';
+import 'screens/auth/app_entry_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const AuthGate(),
+      home: const AppEntryScreen(),
       routes: {
         '/donorDashboard': (context) => const DonorDashboardScreen(),
         '/organizationDashboard': (context) =>
