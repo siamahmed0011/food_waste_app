@@ -1,8 +1,9 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'welcome_screen.dart';
 
 class DonorProfileScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
 
   bool _isEditing = false;
   bool _isLoading = true;
+  bool _isSaving = false;
   String? _imagePath;
 
   static const Color primaryGreen = Color(0xFF2E7D32);
@@ -39,49 +41,104 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
   }
 
   Future<void> _loadProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      final user = FirebaseAuth.instance.currentUser;
 
-    _nameController.text = prefs.getString('donor_name') ?? 'Donor User';
-    _phoneController.text = prefs.getString('donor_phone') ?? '';
-    _addressController.text = prefs.getString('donor_address') ?? '';
-    _emailController.text = prefs.getString('donor_email') ?? 'donor@email.com';
-    _imagePath = prefs.getString('donor_image');
+      if (user == null) {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
 
-    setState(() {
-      _isLoading = false;
-    });
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final data = doc.data() ?? {};
+
+      _nameController.text = (data['name'] ?? '').toString();
+      _phoneController.text = (data['phone'] ?? '').toString();
+      _addressController.text = (data['address'] ?? '').toString();
+      _emailController.text = (data['email'] ?? user.email ?? 'donor@email.com')
+          .toString();
+      _imagePath = (data['imagePath'] ?? '').toString();
+
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load profile: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   Future<void> _saveProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
 
-    await prefs.setString('donor_name', _nameController.text.trim());
-    await prefs.setString('donor_phone', _phoneController.text.trim());
-    await prefs.setString('donor_address', _addressController.text.trim());
-    await prefs.setString('donor_email', _emailController.text.trim());
+      setState(() {
+        _isSaving = true;
+      });
 
-    if (_imagePath != null && _imagePath!.isNotEmpty) {
-      await prefs.setString('donor_image', _imagePath!);
-    }
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'address': _addressController.text.trim(),
+        'email': _emailController.text.trim(),
+        'imagePath': _imagePath ?? '',
+        'role': 'donor',
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isEditing = false;
-    });
+      setState(() {
+        _isSaving = false;
+        _isEditing = false;
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Profile updated successfully',
-          style: TextStyle(fontWeight: FontWeight.w600),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Profile updated successfully',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: primaryGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: const EdgeInsets.all(16),
         ),
-        backgroundColor: primaryGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save profile: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   Future<void> _pickImage() async {
@@ -149,6 +206,10 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
     );
 
     if (shouldLogout == true && mounted) {
+      await FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const WelcomeScreen()),
@@ -262,7 +323,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
           ),
           const SizedBox(height: 18),
           Row(
-            children: [
+            children: const [
               Expanded(
                 child: _MiniInfoCard(
                   icon: Icons.volunteer_activism_outlined,
@@ -270,12 +331,12 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
                   value: 'Donor',
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: _MiniInfoCard(
-                  icon: _isEditing ? Icons.edit_outlined : Icons.verified_user,
+                  icon: Icons.verified_user,
                   title: 'Status',
-                  value: _isEditing ? 'Editing' : 'Active',
+                  value: 'Active',
                 ),
               ),
             ],
@@ -406,10 +467,23 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: _isEditing ? _onSave : null,
-            icon: const Icon(Icons.save_outlined),
+            onPressed: (_isEditing && !_isSaving) ? _onSave : null,
+            icon: _isSaving
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.save_outlined),
             label: Text(
-              _isEditing ? 'Save Changes' : 'Enable Edit First',
+              _isSaving
+                  ? 'Saving...'
+                  : _isEditing
+                  ? 'Save Changes'
+                  : 'Enable Edit First',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             style: ElevatedButton.styleFrom(
