@@ -81,21 +81,66 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please sign in first')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in first')),
+      );
       return;
     }
 
-    if (_foodNameController.text.trim().isEmpty ||
-        _quantityController.text.trim().isEmpty ||
-        _locationController.text.trim().isEmpty ||
-        _selectedCategory == null ||
-        _selectedCondition == null ||
-        _pickupDate == null ||
-        _pickupTime == null) {
+    if (_foodNameController.text.trim().length < 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all important fields')),
+        const SnackBar(
+          content: Text('Food name must be at least 3 characters'),
+        ),
+      );
+      return;
+    }
+
+    if (_quantityController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter quantity')),
+      );
+      return;
+    }
+
+    if (_locationController.text.trim().length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid pickup location')),
+      );
+      return;
+    }
+
+    if (_selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select food category')),
+      );
+      return;
+    }
+
+    if (_selectedCondition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select food condition')),
+      );
+      return;
+    }
+
+    if (_pickupDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select pickup date')),
+      );
+      return;
+    }
+
+    if (_pickupTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select pickup time')),
+      );
+      return;
+    }
+
+    if (_expiryController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter expiry or best before time')),
       );
       return;
     }
@@ -127,7 +172,10 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
         'pickupDate': _formattedDate(),
         'pickupTime': _formattedTime(),
         'status': 'available',
+        'pickupStatus': 'none',
+        'requestCount': 0,
         'createdAt': Timestamp.now(),
+        'updatedAt': Timestamp.now(),
         'imageUrl': '',
       });
 
@@ -141,9 +189,9 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
     } catch (e) {
       if (!context.mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     } finally {
       if (context.mounted) {
         setState(() {
@@ -219,15 +267,19 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 style: TextStyle(fontSize: 14.5, color: bodyColor, height: 1.6),
               ),
               const SizedBox(height: 22),
+
               const _SectionTitle('Basic Info'),
               const SizedBox(height: 12),
+
               _InputField(
                 controller: _foodNameController,
                 label: 'Food Name',
                 hintText: 'e.g. Rice, Curry, Bread',
                 icon: Icons.fastfood_outlined,
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 14),
+
               _DropdownField(
                 label: 'Food Category',
                 value: _selectedCategory,
@@ -241,13 +293,16 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 },
               ),
               const SizedBox(height: 14),
+
               _InputField(
                 controller: _quantityController,
                 label: 'Quantity',
                 hintText: 'e.g. 20 meal packs',
                 icon: Icons.inventory_2_outlined,
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 14),
+
               _InputField(
                 controller: _servesController,
                 label: 'Serves People',
@@ -255,15 +310,19 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 icon: Icons.groups_outlined,
               ),
               const SizedBox(height: 22),
+
               const _SectionTitle('Pickup Details'),
               const SizedBox(height: 12),
+
               _InputField(
                 controller: _locationController,
                 label: 'Pickup Location',
                 hintText: 'e.g. Mirpur, Dhaka',
                 icon: Icons.location_on_outlined,
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 14),
+
               Row(
                 children: [
                   Expanded(
@@ -286,8 +345,10 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 ],
               ),
               const SizedBox(height: 22),
+
               const _SectionTitle('Safety Info'),
               const SizedBox(height: 12),
+
               _DropdownField(
                 label: 'Food Condition',
                 value: _selectedCondition,
@@ -301,6 +362,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 },
               ),
               const SizedBox(height: 14),
+
               _InputField(
                 controller: _expiryController,
                 label: 'Expiry / Best Before',
@@ -308,6 +370,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 icon: Icons.timer_outlined,
               ),
               const SizedBox(height: 14),
+
               _InputField(
                 controller: _notesController,
                 label: 'Notes',
@@ -316,6 +379,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 maxLines: 4,
               ),
               const SizedBox(height: 22),
+
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -362,6 +426,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
                 ),
               ),
               const SizedBox(height: 22),
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -427,13 +492,16 @@ class _InputField extends StatelessWidget {
   final String hintText;
   final IconData icon;
   final int maxLines;
+  final ValueChanged<String>? onChanged;
 
   const _InputField({
+    super.key,
     required this.controller,
     required this.label,
     required this.hintText,
     required this.icon,
     this.maxLines = 1,
+    this.onChanged,
   });
 
   @override
@@ -458,6 +526,7 @@ class _InputField extends StatelessWidget {
         TextField(
           controller: controller,
           maxLines: maxLines,
+          onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: const TextStyle(color: bodyColor, fontSize: 14.5),
@@ -492,6 +561,7 @@ class _DropdownField extends StatelessWidget {
   final ValueChanged<String?> onChanged;
 
   const _DropdownField({
+    super.key,
     required this.label,
     required this.value,
     required this.items,
@@ -523,8 +593,10 @@ class _DropdownField extends StatelessWidget {
           initialValue: value,
           items: items
               .map(
-                (item) =>
-                    DropdownMenuItem<String>(value: item, child: Text(item)),
+                (item) => DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(item),
+                ),
               )
               .toList(),
           onChanged: onChanged,
@@ -556,6 +628,7 @@ class _PickerCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _PickerCard({
+    super.key,
     required this.label,
     required this.value,
     required this.icon,
