@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'edit_donation_screen.dart';
 
 class MyDonationsScreen extends StatelessWidget {
   const MyDonationsScreen({super.key});
@@ -36,6 +37,58 @@ class MyDonationsScreen extends StatelessWidget {
         return Icons.cancel_outlined;
       default:
         return Icons.info_outline;
+    }
+  }
+
+  bool _canEditOrDelete(String status) {
+    final s = status.toLowerCase();
+    return s == 'available' || s == 'requested';
+  }
+
+  Future<void> _deleteDonation(
+    BuildContext context,
+    String docId,
+  ) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete Donation'),
+          content: const Text(
+            'Are you sure you want to delete this donation post?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('food_posts')
+          .doc(docId)
+          .delete();
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Donation deleted successfully')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Delete failed: $e')),
+      );
     }
   }
 
@@ -103,12 +156,12 @@ class MyDonationsScreen extends StatelessWidget {
           final docs = snapshot.data?.docs ?? [];
 
           if (docs.isEmpty) {
-            return Center(
+            return const Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(
                       Icons.fastfood_outlined,
                       size: 64,
@@ -151,6 +204,7 @@ class MyDonationsScreen extends StatelessWidget {
               final status = (data['status'] ?? 'available').toString();
 
               final statusColor = _statusColor(status);
+              final canEditDelete = _canEditOrDelete(status);
 
               return Container(
                 padding: const EdgeInsets.all(16),
@@ -273,6 +327,53 @@ class MyDonationsScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (canEditDelete) ...[
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => EditDonationScreen(
+                                      docId: doc.id,
+                                      donationData: data,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.edit_outlined),
+                              label: const Text('Edit'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                _deleteDonation(context, doc.id);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                              ),
+                              icon: const Icon(Icons.delete_outline),
+                              label: const Text('Delete'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 14),
+                      const Text(
+                        'This donation can no longer be edited or deleted.',
+                        style: TextStyle(
+                          color: bodyColor,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               );
