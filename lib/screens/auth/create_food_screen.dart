@@ -158,7 +158,8 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
       final donorData = userDoc.data() ?? {};
       final donorName = (donorData['name'] ?? 'Donor').toString();
 
-      await FirebaseFirestore.instance.collection('food_posts').add({
+      final postRef =
+          await FirebaseFirestore.instance.collection('food_posts').add({
         'donorId': user.uid,
         'donorName': donorName,
         'foodName': _foodNameController.text.trim(),
@@ -179,10 +180,41 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
         'imageUrl': '',
       });
 
+      final ngoSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'organization')
+          .get();
+
+      final batch = FirebaseFirestore.instance.batch();
+
+      for (final ngoDoc in ngoSnapshot.docs) {
+        final notificationRef =
+            FirebaseFirestore.instance.collection('notifications').doc();
+
+        batch.set(notificationRef, {
+          'userId': ngoDoc.id,
+          'title': 'New Food Available',
+          'body':
+              '$donorName posted ${_foodNameController.text.trim()} at ${_locationController.text.trim()}. If interested, you can request pickup.',
+          'type': 'new_food_available',
+          'isRead': false,
+          'createdAt': Timestamp.now(),
+          'postId': postRef.id,
+          'donorId': user.uid,
+          'donorName': donorName,
+          'foodName': _foodNameController.text.trim(),
+          'location': _locationController.text.trim(),
+        });
+      }
+
+      await batch.commit();
+
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Food post published successfully')),
+        const SnackBar(
+          content: Text('Food post published and NGOs notified'),
+        ),
       );
 
       Navigator.pop(context);
