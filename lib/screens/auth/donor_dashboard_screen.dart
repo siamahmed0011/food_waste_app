@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'create_food_screen.dart';
 import 'donor_profile_screen.dart';
 import 'donor_notifications_screen.dart';
+import 'my_donations_screen.dart';
 
 class DonorDashboardScreen extends StatefulWidget {
   const DonorDashboardScreen({super.key});
@@ -15,12 +16,11 @@ class DonorDashboardScreen extends StatefulWidget {
 class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    _DonorHomeTab(),
-    _MyPostsTab(),
-    _RequestsTab(),
-    _HistoryTab(),
-    DonorProfileScreen(),
+  final List<Widget> _pages = [
+    const _DonorHomeTab(),
+    const _RequestsTab(),
+    MyDonationsScreen(),
+    const DonorProfileScreen(),
   ];
 
   @override
@@ -62,16 +62,12 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.inventory_2_outlined),
-            label: 'My Posts',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.handshake_outlined),
             label: 'Requests',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history_rounded),
-            label: 'History',
+            icon: Icon(Icons.inventory_2_outlined),
+            label: 'My Donations',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline_rounded),
@@ -136,7 +132,7 @@ class _DonorHomeTab extends StatelessWidget {
                     ],
                   ),
                 ),
-               IconButton(
+                IconButton(
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -154,7 +150,6 @@ class _DonorHomeTab extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 18),
-
             StreamBuilder<QuerySnapshot>(
               stream: user == null
                   ? null
@@ -223,10 +218,7 @@ class _DonorHomeTab extends StatelessWidget {
                 );
               },
             ),
-
             const SizedBox(height: 22),
-            const SizedBox(height: 16),
-
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -282,9 +274,7 @@ class _DonorHomeTab extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 22),
-
             const Text(
               'Quick Actions',
               style: TextStyle(
@@ -294,7 +284,6 @@ class _DonorHomeTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-
             Row(
               children: [
                 Expanded(
@@ -313,18 +302,24 @@ class _DonorHomeTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: _QuickActionCard(
-                    icon: Icons.history_rounded,
-                    title: 'History',
-                    subtitle: 'View completed',
+                    icon: Icons.inventory_2_outlined,
+                    title: 'My Donations',
+                    subtitle: 'View all your posts',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MyDonationsScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
             ),
-
             const SizedBox(height: 22),
-
             const Text(
               'Recent Activity',
               style: TextStyle(
@@ -334,7 +329,6 @@ class _DonorHomeTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-
             const _ActivityTile(
               title: 'Food picked up',
               subtitle: 'NGO collected your donation',
@@ -347,9 +341,7 @@ class _DonorHomeTab extends StatelessWidget {
               title: 'Request received',
               subtitle: 'NGO requested pickup',
             ),
-
             const SizedBox(height: 18),
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(18),
@@ -384,19 +376,6 @@ class _DonorHomeTab extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _MyPostsTab extends StatelessWidget {
-  const _MyPostsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _SimpleTabWrapper(
-      title: 'My Posts',
-      subtitle: 'All your active and past donation posts will appear here.',
-      icon: Icons.inventory_2_outlined,
     );
   }
 }
@@ -562,7 +541,6 @@ class _RequestsTab extends StatelessWidget {
                 style: TextStyle(fontSize: 14.5, color: bodyColor),
               ),
               const SizedBox(height: 18),
-
               if (snapshot.connectionState == ConnectionState.waiting)
                 const Center(
                   child: Padding(
@@ -680,19 +658,6 @@ class _RequestsTab extends StatelessWidget {
           );
         },
       ),
-    );
-  }
-}
-
-class _HistoryTab extends StatelessWidget {
-  const _HistoryTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _SimpleTabWrapper(
-      title: 'History',
-      subtitle: 'Completed pickups and donation records will appear here.',
-      icon: Icons.history_rounded,
     );
   }
 }
@@ -972,70 +937,6 @@ class _RequestCard extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SimpleTabWrapper extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  const _SimpleTabWrapper({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const Color titleColor = Color(0xFF1D2939);
-    const Color bodyColor = Color(0xFF6B7280);
-    const Color primary = Color(0xFF2E7D32);
-
-    return SafeArea(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: const Color(0xFFE7F6EA),
-                  child: Icon(icon, color: primary, size: 30),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: titleColor,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  subtitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: bodyColor,
-                    fontSize: 14.5,
-                    height: 1.6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
