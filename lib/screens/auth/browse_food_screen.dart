@@ -35,9 +35,9 @@ class BrowseFoodScreen extends StatelessWidget {
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please sign in first')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in first')),
+      );
       return;
     }
 
@@ -47,7 +47,43 @@ class BrowseFoodScreen extends StatelessWidget {
         .get();
 
     final orgData = orgDoc.data() ?? {};
+
     final organizationName = (orgData['name'] ?? 'Organization').toString();
+    final organizationPhone = (orgData['phone'] ?? '').toString();
+    final organizationEmail =
+        (orgData['email'] ?? user.email ?? '').toString();
+
+    String pickupNote = '';
+    final noteController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Add Pickup Note'),
+        content: TextField(
+          controller: noteController,
+          decoration: const InputDecoration(
+            hintText: 'Pickup time / instruction',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              pickupNote = '';
+              Navigator.pop(context);
+            },
+            child: const Text('Skip'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              pickupNote = noteController.text.trim();
+              Navigator.pop(context);
+            },
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
 
     final donorId = (postData['donorId'] ?? '').toString();
     final donorName = (postData['donorName'] ?? 'Donor').toString();
@@ -55,18 +91,25 @@ class BrowseFoodScreen extends StatelessWidget {
     final requestRef = await FirebaseFirestore.instance
         .collection('pickup_requests')
         .add({
-          'postId': postId,
-          'foodName': (postData['foodName'] ?? '').toString(),
-          'quantity': (postData['quantity'] ?? '').toString(),
-          'location': (postData['location'] ?? '').toString(),
-          'donorId': donorId,
-          'donorName': donorName,
-          'organizationId': user.uid,
-          'organizationName': organizationName,
-          'status': 'pending',
-          'requestedAt': Timestamp.now(),
-          'updatedAt': Timestamp.now(),
-        });
+      'postId': postId,
+      'foodName': (postData['foodName'] ?? '').toString(),
+      'quantity': (postData['quantity'] ?? '').toString(),
+      'location': (postData['location'] ?? '').toString(),
+      'donorId': donorId,
+      'donorName': donorName,
+      'organizationId': user.uid,
+      'organizationName': organizationName,
+
+      // NGO details for donor-side View
+      'organizationPhone': organizationPhone,
+      'organizationEmail': organizationEmail,
+      'pickupNote': pickupNote,
+
+      'status': 'pending',
+      'pickupStatus': 'pending',
+      'requestedAt': Timestamp.now(),
+      'updatedAt': Timestamp.now(),
+    });
 
     if (donorId.isNotEmpty) {
       await FirebaseFirestore.instance.collection('notifications').add({
@@ -83,9 +126,9 @@ class BrowseFoodScreen extends StatelessWidget {
     }
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Request sent successfully')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Request sent successfully')),
+    );
   }
 
   Future<void> _cancelRequest({
@@ -99,7 +142,11 @@ class BrowseFoodScreen extends StatelessWidget {
     await FirebaseFirestore.instance
         .collection('pickup_requests')
         .doc(requestId)
-        .update({'status': 'cancelled', 'updatedAt': Timestamp.now()});
+        .update({
+      'status': 'cancelled',
+      'pickupStatus': 'cancelled',
+      'updatedAt': Timestamp.now(),
+    });
 
     if (donorId.isNotEmpty) {
       await FirebaseFirestore.instance.collection('notifications').add({
@@ -115,9 +162,10 @@ class BrowseFoodScreen extends StatelessWidget {
     }
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Request cancelled')));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Request cancelled')),
+    );
   }
 
   Widget _buildImagePlaceholder() {
@@ -499,27 +547,26 @@ class BrowseFoodScreen extends StatelessWidget {
                       final doc = docs[index];
                       final data = doc.data() as Map<String, dynamic>;
 
-                      final foodName = (data['foodName'] ?? 'Food Item')
-                          .toString();
-                      final quantity = (data['quantity'] ?? 'Not specified')
-                          .toString();
-                      final category = (data['category'] ?? 'Not specified')
-                          .toString();
-                      final condition = (data['condition'] ?? 'Not specified')
-                          .toString();
+                      final foodName =
+                          (data['foodName'] ?? 'Food Item').toString();
+                      final quantity =
+                          (data['quantity'] ?? 'Not specified').toString();
+                      final category =
+                          (data['category'] ?? 'Not specified').toString();
+                      final condition =
+                          (data['condition'] ?? 'Not specified').toString();
                       final location =
                           (data['location'] ?? 'Location not added').toString();
-                      final serves = (data['serves'] ?? 'Not specified')
-                          .toString();
+                      final serves =
+                          (data['serves'] ?? 'Not specified').toString();
                       final notes = (data['notes'] ?? '').toString();
-                      final donorName = (data['donorName'] ?? 'Donor')
-                          .toString();
-                      final pickupDate = (data['pickupDate'] ?? 'Not set')
-                          .toString();
-                      final pickupTime = (data['pickupTime'] ?? 'Not set')
-                          .toString();
-                      final expiry = (data['expiry'] ?? 'Not specified')
-                          .toString();
+                      final donorName = (data['donorName'] ?? 'Donor').toString();
+                      final pickupDate =
+                          (data['pickupDate'] ?? 'Not set').toString();
+                      final pickupTime =
+                          (data['pickupTime'] ?? 'Not set').toString();
+                      final expiry =
+                          (data['expiry'] ?? 'Not specified').toString();
                       final imageUrl = (data['imageUrl'] ?? '').toString();
                       final createdAt = _formatTimestamp(data['createdAt']);
                       final expired = _isExpired(data);
@@ -581,9 +628,8 @@ class BrowseFoodScreen extends StatelessWidget {
                                           color: expired
                                               ? const Color(0xFFFFE5E5)
                                               : const Color(0xFFE8F1FD),
-                                          borderRadius: BorderRadius.circular(
-                                            30,
-                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(30),
                                         ),
                                         child: Text(
                                           expired ? 'Expired' : 'Available',

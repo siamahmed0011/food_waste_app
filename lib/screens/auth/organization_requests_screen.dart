@@ -51,11 +51,11 @@ class _OrganizationRequestsScreenState
         .collection('pickup_requests')
         .doc(requestId)
         .update({
-        'status': 'cancelled',
-        'pickupStatus': 'cancelled',
-        'updatedAt': Timestamp.now(),
-        'pickupUpdatedAt': Timestamp.now(),
-      });
+      'status': 'cancelled',
+      'pickupStatus': 'cancelled',
+      'updatedAt': Timestamp.now(),
+      'pickupUpdatedAt': Timestamp.now(),
+    });
 
     final donorId = (data['donorId'] ?? '').toString();
     if (donorId.isNotEmpty) {
@@ -122,141 +122,427 @@ class _OrganizationRequestsScreenState
         return Icons.hourglass_top_rounded;
     }
   }
-Future<void> schedulePickup({
-  required BuildContext context,
-  required String requestId,
-}) async {
-  DateTime? selectedDate;
-  TimeOfDay? selectedTime;
 
-  selectedDate = await showDatePicker(
-    context: context,
-    initialDate: DateTime.now(),
-    firstDate: DateTime.now(),
-    lastDate: DateTime.now().add(const Duration(days: 30)),
-  );
+  Future<void> schedulePickup({
+    required BuildContext context,
+    required String requestId,
+  }) async {
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
 
-  if (selectedDate == null) return;
+    selectedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+    );
 
-  selectedTime = await showTimePicker(
-    context: context,
-    initialTime: TimeOfDay.now(),
-  );
+    if (selectedDate == null) return;
 
-  if (selectedTime == null) return;
+    selectedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
 
-  final requestDoc = await FirebaseFirestore.instance
-      .collection('pickup_requests')
-      .doc(requestId)
-      .get();
+    if (selectedTime == null) return;
 
-  final requestData = requestDoc.data() ?? {};
-  final donorId = (requestData['donorId'] ?? '').toString();
-  final foodName = (requestData['foodName'] ?? 'food').toString();
-  final organizationName =
-      (requestData['organizationName'] ?? 'Organization').toString();
+    final requestDoc = await FirebaseFirestore.instance
+        .collection('pickup_requests')
+        .doc(requestId)
+        .get();
 
-  final formattedDate = DateFormat('dd MMM yyyy').format(selectedDate);
-  final formattedTime = selectedTime.format(context);
+    final requestData = requestDoc.data() ?? {};
+    final donorId = (requestData['donorId'] ?? '').toString();
+    final foodName = (requestData['foodName'] ?? 'food').toString();
+    final organizationName =
+        (requestData['organizationName'] ?? 'Organization').toString();
 
-  await FirebaseFirestore.instance
-      .collection('pickup_requests')
-      .doc(requestId)
-      .update({
-    'pickupStatus': 'scheduled',
-    'pickupDate': formattedDate,
-    'pickupTime': formattedTime,
-    'updatedAt': Timestamp.now(),
-    'pickupUpdatedAt': Timestamp.now(),
-  });
+    final formattedDate = DateFormat('dd MMM yyyy').format(selectedDate);
+    final formattedTime = selectedTime.format(context);
 
-  if (donorId.isNotEmpty) {
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'userId': donorId,
-      'title': 'Pickup scheduled',
-      'body': '$organizationName scheduled pickup for $foodName on $formattedDate at $formattedTime',
-      'type': 'pickup_scheduled',
-      'isRead': false,
-      'createdAt': Timestamp.now(),
-      'requestId': requestId,
-      'postId': (requestData['postId'] ?? '').toString(),
+    await FirebaseFirestore.instance
+        .collection('pickup_requests')
+        .doc(requestId)
+        .update({
+      'pickupStatus': 'scheduled',
+      'pickupDate': formattedDate,
+      'pickupTime': formattedTime,
+      'updatedAt': Timestamp.now(),
+      'pickupUpdatedAt': Timestamp.now(),
     });
+
+    if (donorId.isNotEmpty) {
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'userId': donorId,
+        'title': 'Pickup scheduled',
+        'body':
+            '$organizationName scheduled pickup for $foodName on $formattedDate at $formattedTime',
+        'type': 'pickup_scheduled',
+        'isRead': false,
+        'createdAt': Timestamp.now(),
+        'requestId': requestId,
+        'postId': (requestData['postId'] ?? '').toString(),
+      });
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Pickup scheduled')),
+    );
   }
 
-  if (!mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Pickup scheduled')),
-  );
-}
-Future<void> markOnTheWay(String requestId) async {
-  final requestDoc = await FirebaseFirestore.instance
-      .collection('pickup_requests')
-      .doc(requestId)
-      .get();
+  Future<void> markOnTheWay(String requestId) async {
+    final requestDoc = await FirebaseFirestore.instance
+        .collection('pickup_requests')
+        .doc(requestId)
+        .get();
 
-  final requestData = requestDoc.data() ?? {};
-  final donorId = (requestData['donorId'] ?? '').toString();
-  final foodName = (requestData['foodName'] ?? 'food').toString();
-  final organizationName =
-      (requestData['organizationName'] ?? 'Organization').toString();
+    final requestData = requestDoc.data() ?? {};
+    final donorId = (requestData['donorId'] ?? '').toString();
+    final foodName = (requestData['foodName'] ?? 'food').toString();
+    final organizationName =
+        (requestData['organizationName'] ?? 'Organization').toString();
 
-  await FirebaseFirestore.instance
-      .collection('pickup_requests')
-      .doc(requestId)
-      .update({
-    'pickupStatus': 'on_the_way',
-    'updatedAt': Timestamp.now(),
-    'pickupUpdatedAt': Timestamp.now(),
-  });
-
-  if (donorId.isNotEmpty) {
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'userId': donorId,
-      'title': 'Pickup on the way',
-      'body': '$organizationName is on the way to collect $foodName',
-      'type': 'pickup_on_the_way',
-      'isRead': false,
-      'createdAt': Timestamp.now(),
-      'requestId': requestId,
-      'postId': (requestData['postId'] ?? '').toString(),
+    await FirebaseFirestore.instance
+        .collection('pickup_requests')
+        .doc(requestId)
+        .update({
+      'pickupStatus': 'on_the_way',
+      'updatedAt': Timestamp.now(),
+      'pickupUpdatedAt': Timestamp.now(),
     });
+
+    if (donorId.isNotEmpty) {
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'userId': donorId,
+        'title': 'Pickup on the way',
+        'body': '$organizationName is on the way to collect $foodName',
+        'type': 'pickup_on_the_way',
+        'isRead': false,
+        'createdAt': Timestamp.now(),
+        'requestId': requestId,
+        'postId': (requestData['postId'] ?? '').toString(),
+      });
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Marked as on the way')),
+    );
   }
-}
 
-Future<void> markCompleted(String requestId) async {
-  final requestDoc = await FirebaseFirestore.instance
-      .collection('pickup_requests')
-      .doc(requestId)
-      .get();
+  Future<void> markCompleted(String requestId) async {
+    final requestDoc = await FirebaseFirestore.instance
+        .collection('pickup_requests')
+        .doc(requestId)
+        .get();
 
-  final requestData = requestDoc.data() ?? {};
-  final donorId = (requestData['donorId'] ?? '').toString();
-  final foodName = (requestData['foodName'] ?? 'food').toString();
-  final organizationName =
-      (requestData['organizationName'] ?? 'Organization').toString();
+    final requestData = requestDoc.data() ?? {};
+    final donorId = (requestData['donorId'] ?? '').toString();
+    final foodName = (requestData['foodName'] ?? 'food').toString();
+    final organizationName =
+        (requestData['organizationName'] ?? 'Organization').toString();
 
-  await FirebaseFirestore.instance
-      .collection('pickup_requests')
-      .doc(requestId)
-      .update({
-    'pickupStatus': 'completed',
-    'updatedAt': Timestamp.now(),
-    'pickupUpdatedAt': Timestamp.now(),
-  });
-
-  if (donorId.isNotEmpty) {
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'userId': donorId,
-      'title': 'Pickup completed',
-      'body': '$organizationName completed pickup for $foodName',
-      'type': 'pickup_completed',
-      'isRead': false,
-      'createdAt': Timestamp.now(),
-      'requestId': requestId,
-      'postId': (requestData['postId'] ?? '').toString(),
+    await FirebaseFirestore.instance
+        .collection('pickup_requests')
+        .doc(requestId)
+        .update({
+      'pickupStatus': 'completed',
+      'updatedAt': Timestamp.now(),
+      'pickupUpdatedAt': Timestamp.now(),
+      'status': 'collected',
     });
+
+    if (donorId.isNotEmpty) {
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'userId': donorId,
+        'title': 'Pickup completed',
+        'body': '$organizationName completed pickup for $foodName',
+        'type': 'pickup_completed',
+        'isRead': false,
+        'createdAt': Timestamp.now(),
+        'requestId': requestId,
+        'postId': (requestData['postId'] ?? '').toString(),
+      });
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Pickup completed')),
+    );
   }
-}
+
+  void _showNotifications(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final last7Days = Timestamp.fromDate(
+      DateTime.now().subtract(const Duration(days: 7)),
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.72,
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  width: 48,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.notifications_active_rounded,
+                        color: primary,
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Notifications',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: titleColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 18),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Last 7 days updates',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: bodyColor,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('notifications')
+                        .where('userId', isEqualTo: user.uid)
+                        .where('createdAt', isGreaterThan: last7Days)
+                        .orderBy('createdAt', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: primary),
+                        );
+                      }
+
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(
+                              'Error: ${snapshot.error}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: bodyColor,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      final docs = snapshot.data?.docs ?? [];
+
+                      if (docs.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No notifications in the last 7 days',
+                            style: TextStyle(
+                              color: bodyColor,
+                              fontSize: 14.5,
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                        itemCount: docs.length,
+                        itemBuilder: (context, index) {
+                          final doc = docs[index];
+                          final data = doc.data() as Map<String, dynamic>;
+                          final isRead = (data['isRead'] ?? false) as bool;
+                          final title = (data['title'] ?? '').toString();
+                          final body = (data['body'] ?? '').toString();
+                          final createdAt = _formatTime(data['createdAt']);
+
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: () async {
+                              await _markRead(doc.id);
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: isRead
+                                    ? const Color(0xFFF8FAFC)
+                                    : const Color(0xFFE8F1FD),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: Colors.white,
+                                    child: Icon(
+                                      isRead
+                                          ? Icons.notifications_none_rounded
+                                          : Icons.notifications_active_rounded,
+                                      color: primary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          title,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            color: titleColor,
+                                            fontSize: 14.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          body,
+                                          style: const TextStyle(
+                                            color: bodyColor,
+                                            fontSize: 13.5,
+                                            height: 1.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          createdAt,
+                                          style: const TextStyle(
+                                            color: bodyColor,
+                                            fontSize: 12.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBellButton(User user) {
+    final last7Days = Timestamp.fromDate(
+      DateTime.now().subtract(const Duration(days: 7)),
+    );
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isEqualTo: user.uid)
+          .where('createdAt', isGreaterThan: last7Days)
+          .where('isRead', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final unreadCount = snapshot.data?.docs.length ?? 0;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _showNotifications(context),
+              child: Container(
+                height: 44,
+                width: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: titleColor,
+                ),
+              ),
+            ),
+            if (unreadCount > 0)
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  constraints: const BoxConstraints(minWidth: 20),
+                  child: Text(
+                    unreadCount > 9 ? '9+' : unreadCount.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -283,13 +569,20 @@ Future<void> markCompleted(String requestId) async {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'My Requests',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: titleColor,
-                    ),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'My Requests',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: titleColor,
+                          ),
+                        ),
+                      ),
+                      _buildBellButton(user),
+                    ],
                   ),
                   const SizedBox(height: 6),
                   const Text(
@@ -297,114 +590,6 @@ Future<void> markCompleted(String requestId) async {
                     style: TextStyle(fontSize: 14.5, color: bodyColor),
                   ),
                   const SizedBox(height: 16),
-
-                  // Notifications
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('notifications')
-                        .where('userId', isEqualTo: user.uid)
-                        .orderBy('createdAt', descending: true)
-                        .limit(5)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return const SizedBox.shrink();
-                      }
-
-                      final docs = snapshot.data?.docs ?? [];
-                      if (docs.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
-
-                      return Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 14,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Notifications',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: titleColor,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            ...docs.map((doc) {
-                              final data = doc.data() as Map<String, dynamic>;
-                              final isRead = (data['isRead'] ?? false) as bool;
-                              final title = (data['title'] ?? '').toString();
-                              final body = (data['body'] ?? '').toString();
-
-                              return InkWell(
-                                onTap: () => _markRead(doc.id),
-                                child: Container(
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: isRead
-                                        ? const Color(0xFFF8FAFC)
-                                        : const Color(0xFFE8F1FD),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Icon(
-                                        isRead
-                                            ? Icons.notifications_none_rounded
-                                            : Icons.notifications_active,
-                                        color: primary,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              title,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                                color: titleColor,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              body,
-                                              style: const TextStyle(
-                                                color: bodyColor,
-                                                fontSize: 13.5,
-                                                height: 1.5,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
 
                   SizedBox(
                     height: 42,
@@ -480,12 +665,12 @@ Future<void> markCompleted(String requestId) async {
 
                     final aTime =
                         (aData['updatedAt'] as Timestamp?)
-                            ?.millisecondsSinceEpoch ??
-                        0;
+                                ?.millisecondsSinceEpoch ??
+                            0;
                     final bTime =
                         (bData['updatedAt'] as Timestamp?)
-                            ?.millisecondsSinceEpoch ??
-                        0;
+                                ?.millisecondsSinceEpoch ??
+                            0;
 
                     return bTime.compareTo(aTime);
                   });
@@ -512,8 +697,24 @@ Future<void> markCompleted(String requestId) async {
                       final quantity = (data['quantity'] ?? '').toString();
                       final status = (data['status'] ?? '').toString();
                       final updatedAt = _formatTime(data['updatedAt']);
-                      final pickupStatus = (data['pickupStatus'] ?? '').toString();
-                      final pickupTime = (data['pickupTime'] ?? '').toString();
+                      final pickupStatus =
+                          (data['pickupStatus'] ?? '').toString();
+
+                      String statusLabel = status;
+                      if (status == 'accepted' &&
+                          pickupStatus == 'scheduled') {
+                        statusLabel = 'Scheduled';
+                      } else if (status == 'accepted' &&
+                          pickupStatus == 'on_the_way') {
+                        statusLabel = 'On the Way';
+                      } else if (status == 'accepted' &&
+                          pickupStatus == 'completed') {
+                        statusLabel = 'Completed';
+                      } else if (status.isNotEmpty) {
+                        statusLabel =
+                            status[0].toUpperCase() + status.substring(1);
+                      }
+
                       return Container(
                         margin: const EdgeInsets.only(bottom: 14),
                         padding: const EdgeInsets.all(16),
@@ -561,13 +762,7 @@ Future<void> markCompleted(String requestId) async {
                                     borderRadius: BorderRadius.circular(30),
                                   ),
                                   child: Text(
-                                    status == 'accepted' && pickupStatus == 'scheduled'
-                                    ? 'Scheduled'
-                                    : status == 'accepted' && pickupStatus == 'on_the_way'
-                                        ? 'On the Way'
-                                        : status == 'accepted' && pickupStatus == 'completed'
-                                            ? 'Completed'
-                                            : status[0].toUpperCase() + status.substring(1),
+                                    statusLabel,
                                     style: TextStyle(
                                       color: _statusColor(status),
                                       fontWeight: FontWeight.w700,
@@ -615,7 +810,7 @@ Future<void> markCompleted(String requestId) async {
                                 width: double.infinity,
                                 child: OutlinedButton(
                                   onPressed: () => _cancelPendingRequest(
-                                    requestId: doc.id,
+                                    requestId: requestId,
                                     data: data,
                                   ),
                                   style: OutlinedButton.styleFrom(
@@ -639,34 +834,89 @@ Future<void> markCompleted(String requestId) async {
                                 ),
                               ),
                             ],
-                            if (status == 'accepted' && pickupStatus == 'accepted') ...[
-                            const SizedBox(height: 14),
-                            ElevatedButton(
-                              onPressed: () {
-                                schedulePickup(
-                                  context: context,
-                                  requestId: requestId,
-                                );
-                              },
-                              child: const Text('Schedule Pickup'),
-                            ),
-                          ],
-
-                          if (status == 'accepted' && pickupStatus == 'scheduled') ...[
-                            const SizedBox(height: 14),
-                            ElevatedButton(
-                              onPressed: () => markOnTheWay(requestId),
-                              child: const Text('On the Way'),
-                            ),
-                          ],
-
-                          if (status == 'accepted' && pickupStatus == 'on_the_way') ...[
-                            const SizedBox(height: 14),
-                            ElevatedButton(
-                              onPressed: () => markCompleted(requestId),
-                              child: const Text('Completed'),
-                            ),
-                          ],
+                            if (status == 'accepted' &&
+                                pickupStatus == 'accepted') ...[
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    schedulePickup(
+                                      context: context,
+                                      requestId: requestId,
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 13,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Schedule Pickup',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (status == 'accepted' &&
+                                pickupStatus == 'scheduled') ...[
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () => markOnTheWay(requestId),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 13,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'On the Way',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (status == 'accepted' &&
+                                pickupStatus == 'on_the_way') ...[
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () => markCompleted(requestId),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 13,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Completed',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       );

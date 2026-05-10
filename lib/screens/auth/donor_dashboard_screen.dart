@@ -109,27 +109,52 @@ class _DonorHomeTab extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Welcome back 👋',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: bodyColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        user?.email ?? 'Donor Dashboard',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          color: titleColor,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
+                  child: StreamBuilder<DocumentSnapshot>(
+                    stream: user == null
+                        ? null
+                        : FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(user.uid)
+                            .snapshots(),
+                    builder: (context, snapshot) {
+                      String donorName = 'Donor Dashboard';
+
+                      if (snapshot.hasData && snapshot.data!.exists) {
+                        final data =
+                            snapshot.data!.data() as Map<String, dynamic>;
+                        donorName = (data['name'] ??
+                                data['fullName'] ??
+                                data['username'] ??
+                                user?.email ??
+                                'Donor Dashboard')
+                            .toString();
+                      } else if (user?.email != null) {
+                        donorName = user!.email!;
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Welcome back 👋',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: bodyColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            donorName,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: titleColor,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 IconButton(
@@ -498,6 +523,170 @@ class _RequestsTab extends StatelessWidget {
     return status;
   }
 
+  void _showRequestDetails(
+    BuildContext context,
+    Map<String, dynamic> data,
+  ) {
+    const Color titleColor = Color(0xFF1D2939);
+    const Color bodyColor = Color(0xFF6B7280);
+    const Color primary = Color(0xFF2E7D32);
+
+    final ngoName =
+        (data['organizationName'] ?? data['ngoName'] ?? 'Organization')
+            .toString();
+    final foodName = (data['foodName'] ?? data['foodTitle'] ?? 'Food Item')
+        .toString();
+    final quantity = (data['quantity'] ?? '-').toString();
+    final location = (data['location'] ?? '-').toString();
+    final status = (data['status'] ?? '-').toString();
+    final pickupStatus = (data['pickupStatus'] ?? '-').toString();
+    final phone = (data['phone'] ?? data['organizationPhone'] ?? '-').toString();
+    final email = (data['email'] ?? data['organizationEmail'] ?? '-').toString();
+    final note = (data['note'] ??
+            data['pickupNote'] ??
+            data['message'] ??
+            data['requestNote'] ??
+            '-')
+        .toString();
+
+    final requestedAt = data['requestedAt'];
+    String requestedTime = '-';
+    if (requestedAt is Timestamp) {
+      final d = requestedAt.toDate();
+      requestedTime =
+          '${d.day}/${d.month}/${d.year} • ${d.hour}:${d.minute.toString().padLeft(2, '0')}';
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 54,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Request Details',
+                    style: TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                      color: titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7FAF8),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE5ECE7)),
+                    ),
+                    child: Column(
+                      children: [
+                        _detailsRow('NGO Name', ngoName),
+                        _detailsRow('Food', foodName),
+                        _detailsRow('Quantity', quantity),
+                        _detailsRow('Location', location),
+                        _detailsRow('Status', status),
+                        _detailsRow('Pickup Status', pickupStatus),
+                        _detailsRow('Phone', phone),
+                        _detailsRow('Email', email),
+                        _detailsRow('Request Time', requestedTime),
+                        _detailsRow('Note', note, isLast: true),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Close',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _detailsRow(
+    String label,
+    String value, {
+    bool isLast = false,
+  }) {
+    const Color titleColor = Color(0xFF1D2939);
+    const Color bodyColor = Color(0xFF6B7280);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 112,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+                fontSize: 13.5,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value.isEmpty ? '-' : value,
+              style: const TextStyle(
+                color: bodyColor,
+                fontSize: 13.8,
+                height: 1.45,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color titleColor = Color(0xFF1D2939);
@@ -620,38 +809,40 @@ class _RequestsTab extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 14),
                     child: _RequestCard(
-                      ngoName: organizationName,
-                      details: details,
-                      status: _statusLabel(status, pickupStatus),
-                      statusColor: _statusTextColor(status, pickupStatus),
-                      statusBg: _statusBgColor(status, pickupStatus),
-                      primaryText: isPending ? 'Accept' : 'View',
-                      secondaryText: isPending ? 'Decline' : 'Close',
-                      onPrimaryTap: () async {
-                        if (!isPending) return;
-                        await _updateRequestStatus(
-                          context: context,
-                          requestId: requestId,
-                          status: 'accepted',
-                          organizationName: organizationName,
-                          foodName: foodName,
-                          organizationId: organizationId,
-                          postId: postId,
-                        );
-                      },
-                      onSecondaryTap: () async {
-                        if (!isPending) return;
-                        await _updateRequestStatus(
-                          context: context,
-                          requestId: requestId,
-                          status: 'declined',
-                          organizationName: organizationName,
-                          foodName: foodName,
-                          organizationId: organizationId,
-                          postId: postId,
-                        );
-                      },
-                    ),
+  ngoName: organizationName,
+  details: details,
+  status: _statusLabel(status, pickupStatus),
+  statusColor: _statusTextColor(status, pickupStatus),
+  statusBg: _statusBgColor(status, pickupStatus),
+  isPending: isPending,
+  onViewTap: () {
+    _showRequestDetails(context, data);
+  },
+  onAcceptTap: () async {
+    if (!isPending) return;
+    await _updateRequestStatus(
+      context: context,
+      requestId: requestId,
+      status: 'accepted',
+      organizationName: organizationName,
+      foodName: foodName,
+      organizationId: organizationId,
+      postId: postId,
+    );
+  },
+  onDeclineTap: () async {
+    if (!isPending) return;
+    await _updateRequestStatus(
+      context: context,
+      requestId: requestId,
+      status: 'declined',
+      organizationName: organizationName,
+      foodName: foodName,
+      organizationId: organizationId,
+      postId: postId,
+    );
+  },
+),
                   );
                 }),
             ],
@@ -811,10 +1002,10 @@ class _RequestCard extends StatelessWidget {
   final String status;
   final Color statusColor;
   final Color statusBg;
-  final String primaryText;
-  final String secondaryText;
-  final VoidCallback onPrimaryTap;
-  final VoidCallback onSecondaryTap;
+  final bool isPending;
+  final VoidCallback onViewTap;
+  final VoidCallback onAcceptTap;
+  final VoidCallback onDeclineTap;
 
   const _RequestCard({
     required this.ngoName,
@@ -822,10 +1013,10 @@ class _RequestCard extends StatelessWidget {
     required this.status,
     this.statusColor = const Color(0xFF9A6700),
     this.statusBg = const Color(0xFFFFF4D8),
-    required this.primaryText,
-    required this.secondaryText,
-    required this.onPrimaryTap,
-    required this.onSecondaryTap,
+    required this.isPending,
+    required this.onViewTap,
+    required this.onAcceptTap,
+    required this.onDeclineTap,
   });
 
   @override
@@ -868,10 +1059,7 @@ class _RequestCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: statusBg,
                   borderRadius: BorderRadius.circular(30),
@@ -890,7 +1078,10 @@ class _RequestCard extends StatelessWidget {
           const SizedBox(height: 12),
           const Text(
             'Pickup Request',
-            style: TextStyle(fontWeight: FontWeight.w700, color: titleColor),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: titleColor,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -902,40 +1093,57 @@ class _RequestCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onSecondaryTap,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: titleColor,
-                    side: const BorderSide(color: Color(0xFFE3E8E4)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
+          if (isPending)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onDeclineTap,
+                    child: const Text('Decline'),
                   ),
-                  child: Text(secondaryText),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: onPrimaryTap,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onViewTap,
+                    child: const Text('View'),
                   ),
-                  child: Text(primaryText),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onAcceptTap,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Accept'),
+                  ),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    child: const Text('Close'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onViewTap,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('View'),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
