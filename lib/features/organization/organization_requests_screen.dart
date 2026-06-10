@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:food_waste_app/core/theme/app_theme.dart';
 
 class OrganizationRequestsScreen extends StatefulWidget {
   const OrganizationRequestsScreen({super.key});
@@ -12,8 +13,28 @@ class OrganizationRequestsScreen extends StatefulWidget {
 }
 
 class _OrganizationRequestsScreenState
-    extends State<OrganizationRequestsScreen> {
+    extends State<OrganizationRequestsScreen> with SingleTickerProviderStateMixin {
   int selectedTab = 0;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: tabs.length, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {
+          selectedTab = _tabController.index;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   final List<String> tabs = const [
     'Pending',
@@ -23,10 +44,10 @@ class _OrganizationRequestsScreenState
     'Collected',
   ];
 
-  static const Color background = Color(0xFFF6F7F9);
-  static const Color primary = Color(0xFF1565C0);
-  static const Color titleColor = Color(0xFF1D2939);
-  static const Color bodyColor = Color(0xFF6B7280);
+  static const Color background = AppTheme.background;
+  static const Color primary = AppTheme.primary;
+  static const Color titleColor = AppTheme.textTitle;
+  static const Color bodyColor = AppTheme.textBody;
 
   String get selectedStatus => tabs[selectedTab].toLowerCase();
 
@@ -138,7 +159,7 @@ class _OrganizationRequestsScreenState
     );
 
     if (selectedDate == null) return;
-
+    if (!context.mounted) return;
     selectedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
@@ -158,6 +179,7 @@ class _OrganizationRequestsScreenState
         (requestData['organizationName'] ?? 'Organization').toString();
 
     final formattedDate = DateFormat('dd MMM yyyy').format(selectedDate);
+    if (!context.mounted) return;
     final formattedTime = selectedTime.format(context);
 
     await FirebaseFirestore.instance
@@ -185,7 +207,7 @@ class _OrganizationRequestsScreenState
       });
     }
 
-    if (!mounted) return;
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Pickup scheduled')),
     );
@@ -500,7 +522,7 @@ class _OrganizationRequestsScreenState
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 12,
                       offset: const Offset(0, 6),
                     ),
@@ -591,40 +613,85 @@ class _OrganizationRequestsScreenState
                   ),
                   const SizedBox(height: 16),
 
-                  SizedBox(
-                    height: 42,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: tabs.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 10),
-                      itemBuilder: (context, index) {
-                        final selected = selectedTab == index;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedTab = index;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: selected ? primary : Colors.white,
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Text(
-                              tabs[index],
-                              style: TextStyle(
-                                color: selected ? Colors.white : titleColor,
-                                fontWeight: FontWeight.w700,
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('pickup_requests')
+                        .where('organizationId', isEqualTo: user.uid)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      int pendingCount = 0;
+                      int acceptedCount = 0;
+                      int declinedCount = 0;
+                      int cancelledCount = 0;
+                      int collectedCount = 0;
+
+                      if (snapshot.hasData) {
+                        for (var doc in snapshot.data!.docs) {
+                          final status = (doc.data() as Map<String, dynamic>)['status'] ?? '';
+                          if (status == 'pending') pendingCount++;
+                          if (status == 'accepted') acceptedCount++;
+                          if (status == 'declined') declinedCount++;
+                          if (status == 'cancelled') cancelledCount++;
+                          if (status == 'collected') collectedCount++;
+                        }
+                      }
+
+                      final counts = [
+                        pendingCount,
+                        acceptedCount,
+                        declinedCount,
+                        cancelledCount,
+                        collectedCount,
+                      ];
+
+                      return TabBar(
+                        controller: _tabController,
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.start,
+                        indicatorSize: TabBarIndicatorSize.label,
+                        indicatorPadding: EdgeInsets.zero,
+                        indicator: BoxDecoration(
+                          color: AppTheme.primary,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        labelColor: Colors.white,
+                        unselectedLabelColor: AppTheme.textBody,
+                        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                        dividerColor: Colors.transparent,
+                        tabs: List.generate(tabs.length, (index) {
+                          final isSelected = selectedTab == index;
+                          return Tab(
+                            height: 38,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(tabs[index]),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? Colors.white.withOpacity(0.2) : Colors.grey.shade200,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      '${counts[index]}',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: isSelected ? Colors.white : Colors.grey.shade700,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                          );
+                        }),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -676,10 +743,50 @@ class _OrganizationRequestsScreenState
                   });
 
                   if (docs.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No requests found in this section',
-                        style: TextStyle(color: bodyColor, fontSize: 14.5),
+                    return Center(
+                      child: Container(
+                        margin: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(10),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.assignment_outlined,
+                              size: 48,
+                              color: primary,
+                            ),
+                            const SizedBox(height: 14),
+                            const Text(
+                              'No requests found',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: titleColor,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'There are no ${tabs[selectedTab].toLowerCase()} requests at the moment.',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: bodyColor,
+                                fontSize: 14,
+                                height: 1.6,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }
@@ -716,18 +823,12 @@ class _OrganizationRequestsScreenState
                       }
 
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 14),
+                        margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 14,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: AppTheme.cardShadow,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -746,9 +847,9 @@ class _OrganizationRequestsScreenState
                                   child: Text(
                                     foodName,
                                     style: const TextStyle(
-                                      fontSize: 15.5,
-                                      fontWeight: FontWeight.w800,
-                                      color: titleColor,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.textTitle,
                                     ),
                                   ),
                                 ),
@@ -765,44 +866,72 @@ class _OrganizationRequestsScreenState
                                     statusLabel,
                                     style: TextStyle(
                                       color: _statusColor(status),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Donor: $donorName',
-                              style: const TextStyle(
-                                color: bodyColor,
-                                fontSize: 13.5,
-                              ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                const Icon(Icons.person_outline, size: 16, color: AppTheme.textBody),
+                                const SizedBox(width: 8),
+                                Text(
+                                  donorName,
+                                  style: const TextStyle(
+                                    color: AppTheme.textBody,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Quantity: $quantity',
-                              style: const TextStyle(
-                                color: bodyColor,
-                                fontSize: 13.5,
-                              ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.inventory_2_outlined, size: 16, color: AppTheme.textBody),
+                                const SizedBox(width: 8),
+                                Text(
+                                  quantity,
+                                  style: const TextStyle(
+                                    color: AppTheme.textBody,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              location,
-                              style: const TextStyle(
-                                color: bodyColor,
-                                fontSize: 13.5,
-                              ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on_outlined, size: 16, color: AppTheme.textBody),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    location,
+                                    style: const TextStyle(
+                                      color: AppTheme.textBody,
+                                      fontSize: 13,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Updated: $updatedAt',
-                              style: const TextStyle(
-                                color: bodyColor,
-                                fontSize: 13.5,
-                              ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.access_time_outlined, size: 16, color: AppTheme.textBody),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Updated: $updatedAt',
+                                  style: const TextStyle(
+                                    color: AppTheme.textBody,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                             if (status == 'pending') ...[
                               const SizedBox(height: 14),

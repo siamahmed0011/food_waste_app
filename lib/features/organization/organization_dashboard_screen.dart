@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'browse_food_screen.dart';
-import 'organization_requests_screen.dart';
-import 'edit_organization_profile_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'welcome_screen.dart';
+import 'package:food_waste_app/core/theme/app_theme.dart';
+import 'package:food_waste_app/features/browse/browse_food_screen.dart';
+import 'package:food_waste_app/features/organization/organization_requests_screen.dart';
+import 'package:food_waste_app/features/auth/welcome_screen.dart';
+import 'package:food_waste_app/features/ai/ai_assistant_screen.dart';
 
 class OrganizationDashboardScreen extends StatefulWidget {
   const OrganizationDashboardScreen({super.key});
@@ -139,81 +139,173 @@ class _OrganizationHomeTab extends StatelessWidget {
                     (data['serviceArea'] ?? 'Service area not added')
                         .toString();
 
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: primary.withOpacity(0.20),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
+                final isVerified = data['isVerified'] ?? false;
+                final verificationStatus = data['verificationStatus'] ?? 'pending';
+
+                return Column(
+                  children: [
+                    if (!isVerified) ...[
                       Container(
-                        height: 62,
-                        width: 62,
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.16),
-                          shape: BoxShape.circle,
+                          color: verificationStatus == 'rejected'
+                              ? Colors.red.shade50
+                              : Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: verificationStatus == 'rejected'
+                                ? Colors.red.shade200
+                                : Colors.amber.shade300,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.apartment_rounded,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            const Text(
-                              'Welcome back 👋',
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                color: Colors.white70,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            Icon(
+                              verificationStatus == 'rejected'
+                                  ? Icons.gpp_bad_outlined
+                                  : Icons.gpp_maybe_outlined,
+                              color: verificationStatus == 'rejected'
+                                  ? Colors.red.shade700
+                                  : Colors.amber.shade800,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              serviceArea,
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                color: Colors.white70,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    verificationStatus == 'rejected'
+                                        ? 'Verification Rejected'
+                                        : 'Verification Pending',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: verificationStatus == 'rejected'
+                                          ? Colors.red.shade800
+                                          : Colors.amber.shade900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    verificationStatus == 'rejected'
+                                        ? 'Your organization has been rejected by admin. Please update details or contact support.'
+                                        : 'Admin verification is pending. You will be able to request food donations once verified.',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: verificationStatus == 'rejected'
+                                          ? Colors.red.shade700
+                                          : Colors.amber.shade800,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: onProfileTap,
-                        icon: const Icon(
-                          Icons.edit_outlined,
-                          color: Colors.white,
-                        ),
-                      ),
                     ],
-                  ),
+                    Container(
+                      width: double.infinity,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppTheme.primary, AppTheme.accent],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: AppTheme.cardShadow,
+                      ),
+                      child: Stack(
+                        children: [
+                          // Subtle background pattern
+                          Positioned(
+                            right: -20,
+                            top: -20,
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.white.withOpacity(0.05),
+                            ),
+                          ),
+                          Positioned(
+                            right: 40,
+                            bottom: -30,
+                            child: CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Colors.white.withOpacity(0.08),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Welcome back 👋',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        name,
+                                        style: const TextStyle(
+                                          fontSize: 22,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        serviceArea,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.white70,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Stack(
+                                  children: [
+                                    IconButton(
+                                      onPressed: () {},
+                                      icon: const Icon(
+                                        Icons.notifications_outlined,
+                                        color: Colors.white,
+                                        size: 28,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 12,
+                                      top: 12,
+                                      child: Container(
+                                        width: 10,
+                                        height: 10,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.redAccent,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -256,7 +348,7 @@ class _OrganizationHomeTab extends StatelessWidget {
                           child: _DashboardStatCard(
                             value: '$availableCount',
                             label: 'Available',
-                            icon: Icons.fastfood_outlined,
+                            borderColor: AppTheme.success,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -264,7 +356,7 @@ class _OrganizationHomeTab extends StatelessWidget {
                           child: _DashboardStatCard(
                             value: '$pendingCount',
                             label: 'Pending',
-                            icon: Icons.assignment_outlined,
+                            borderColor: AppTheme.warning,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -272,7 +364,7 @@ class _OrganizationHomeTab extends StatelessWidget {
                           child: _DashboardStatCard(
                             value: '$collectedCount',
                             label: 'Collected',
-                            icon: Icons.inventory_2_outlined,
+                            borderColor: AppTheme.accent,
                           ),
                         ),
                       ],
@@ -280,6 +372,91 @@ class _OrganizationHomeTab extends StatelessWidget {
                   },
                 );
               },
+            ),
+
+            const SizedBox(height: 22),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0F766E), Color(0xFF0D9488)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0F766E).withAlpha((0.2 * 255).round()),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha((0.15 * 255).round()),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.smart_toy_outlined,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'EcoSave AI Assistant',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Smart matchmaking, pickup routing & automated query chatbot.',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            height: 1.35,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const AIAssistantScreen()),
+                            );
+                          },
+                          icon: const Icon(Icons.rocket_launch_outlined, size: 14),
+                          label: const Text(
+                            'Open AI Assistant',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF0F766E),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 22),
@@ -343,17 +520,20 @@ class _OrganizationHomeTab extends StatelessWidget {
                   );
                 }
 
-                return Column(
-                  children: docs.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return _LatestFoodCard(
-                      foodName: (data['foodName'] ?? 'Food Item').toString(),
-                      donorName: (data['donorName'] ?? 'Donor').toString(),
-                      quantity: (data['quantity'] ?? 'Not specified')
-                          .toString(),
-                      location: (data['location'] ?? 'No location').toString(),
-                    );
-                  }).toList(),
+                return SizedBox(
+                  height: 140,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: docs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return _LatestFoodCard(
+                        foodName: (data['foodName'] ?? 'Food Item').toString(),
+                        donorName: (data['donorName'] ?? 'Donor').toString(),
+                        quantity: (data['quantity'] ?? 'Not specified').toString(),
+                        location: (data['location'] ?? 'No location').toString(),
+                      );
+                    }).toList(),
+                  ),
                 );
               },
             ),
@@ -409,10 +589,10 @@ class _OrganizationHomeTab extends StatelessWidget {
 class _OrganizationHistoryTab extends StatelessWidget {
   const _OrganizationHistoryTab();
 
-  static const Color primary = Color(0xFF1565C0);
-  static const Color background = Color(0xFFF4F7FC);
-  static const Color titleColor = Color(0xFF102A43);
-  static const Color bodyColor = Color(0xFF6B7280);
+  static const Color primary = AppTheme.primary;
+  static const Color background = AppTheme.background;
+  static const Color titleColor = AppTheme.textTitle;
+  static const Color bodyColor = AppTheme.textBody;
 
   Color _statusColor(String status) {
     switch (status) {
@@ -645,20 +825,14 @@ class _OrganizationHistoryTab extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [
-                          Color(0xFF1E88E5),
-                          Color(0xFF1565C0),
+                          AppTheme.primary,
+                          AppTheme.primaryDark,
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(26),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primary.withOpacity(0.20),
-                          blurRadius: 18,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: AppTheme.cardShadow,
                     ),
                     child: const Row(
                       children: [
@@ -701,52 +875,56 @@ class _OrganizationHistoryTab extends StatelessWidget {
 
                   const SizedBox(height: 18),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _HistorySummaryCard(
-                          title: 'Accepted',
-                          value: '$acceptedCount',
-                          icon: Icons.check_circle_outline,
-                          color: const Color(0xFF16A34A),
-                          bg: const Color(0xFFDCFCE7),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 140,
+                          child: _HistorySummaryCard(
+                            title: 'Accepted',
+                            value: '$acceptedCount',
+                            icon: Icons.check_circle_outline,
+                            color: const Color(0xFF16A34A),
+                            bg: const Color(0xFFDCFCE7),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _HistorySummaryCard(
-                          title: 'Collected',
-                          value: '$collectedCount',
-                          icon: Icons.inventory_2_outlined,
-                          color: const Color(0xFF0F766E),
-                          bg: const Color(0xFFCCFBF1),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 140,
+                          child: _HistorySummaryCard(
+                            title: 'Collected',
+                            value: '$collectedCount',
+                            icon: Icons.inventory_2_outlined,
+                            color: const Color(0xFF0F766E),
+                            bg: const Color(0xFFCCFBF1),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _HistorySummaryCard(
-                          title: 'Declined',
-                          value: '$declinedCount',
-                          icon: Icons.close_rounded,
-                          color: const Color(0xFFDC2626),
-                          bg: const Color(0xFFFEE2E2),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 140,
+                          child: _HistorySummaryCard(
+                            title: 'Declined',
+                            value: '$declinedCount',
+                            icon: Icons.close_rounded,
+                            color: const Color(0xFFDC2626),
+                            bg: const Color(0xFFFEE2E2),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _HistorySummaryCard(
-                          title: 'Cancelled',
-                          value: '$cancelledCount',
-                          icon: Icons.cancel_outlined,
-                          color: const Color(0xFFF59E0B),
-                          bg: const Color(0xFFFEF3C7),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 140,
+                          child: _HistorySummaryCard(
+                            title: 'Cancelled',
+                            value: '$cancelledCount',
+                            icon: Icons.cancel_outlined,
+                            color: const Color(0xFFF59E0B),
+                            bg: const Color(0xFFFEF3C7),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 24),
@@ -763,36 +941,37 @@ class _OrganizationHistoryTab extends StatelessWidget {
                   if (historyDocs.isEmpty)
                     Container(
                       width: double.infinity,
+                      margin: const EdgeInsets.only(top: 10),
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 14,
+                            color: Colors.black.withAlpha(10),
+                            blurRadius: 16,
                             offset: const Offset(0, 8),
                           ),
                         ],
                       ),
-                      child: const Column(
+                      child: Column(
                         children: [
-                          Icon(
-                            Icons.history_rounded,
-                            size: 44,
+                          const Icon(
+                            Icons.assignment_outlined,
+                            size: 48,
                             color: primary,
                           ),
-                          SizedBox(height: 12),
-                          Text(
+                          const SizedBox(height: 14),
+                          const Text(
                             'No history yet',
                             style: TextStyle(
-                              fontSize: 17,
+                              fontSize: 18,
                               fontWeight: FontWeight.w800,
                               color: titleColor,
                             ),
                           ),
-                          SizedBox(height: 8),
-                          Text(
+                          const SizedBox(height: 8),
+                          const Text(
                             'Accepted, declined, cancelled and collected requests will appear here.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
@@ -826,14 +1005,8 @@ class _OrganizationHistoryTab extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 14,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.cardShadow,
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -951,17 +1124,11 @@ class _HistorySummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Column(
         children: [
@@ -978,7 +1145,7 @@ class _HistorySummaryCard extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: 28,
               fontWeight: FontWeight.w800,
               color: Color(0xFF102A43),
             ),
@@ -1009,8 +1176,8 @@ class _HistoryInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFF1565C0);
-    const Color bodyColor = Color(0xFF6B7280);
+    const Color primary = AppTheme.primary;
+    const Color bodyColor = AppTheme.textBody;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1033,7 +1200,7 @@ class _HistoryInfoRow extends StatelessWidget {
   }
 }
 class _OrganizationProfileTab extends StatefulWidget {
-  const _OrganizationProfileTab({super.key});
+  const _OrganizationProfileTab();
 
   @override
   State<_OrganizationProfileTab> createState() =>
@@ -1041,10 +1208,9 @@ class _OrganizationProfileTab extends StatefulWidget {
 }
 
 class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
-  static const Color primary = Color(0xFF1565C0);
-  static const Color bg = Color(0xFFF4F7FC);
-  static const Color titleColor = Color(0xFF102A43);
-  static const Color bodyColor = Color(0xFF6B7280);
+  static const Color primary = AppTheme.primary;
+  static const Color bg = AppTheme.background;
+  static const Color titleColor = AppTheme.textTitle;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -1179,6 +1345,33 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
     );
   }
 
+  Widget _buildFieldGroup(String title, List<Widget> fields) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textTitle,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...fields,
+        ],
+      ),
+    );
+  }
+
   Widget _buildField({
     required String label,
     required String hint,
@@ -1188,19 +1381,8 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
         enabled: _isEditing,
@@ -1208,35 +1390,35 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
         keyboardType: keyboardType,
         validator: validator,
         style: const TextStyle(
-          color: titleColor,
-          fontSize: 15.5,
+          color: AppTheme.textTitle,
+          fontSize: 15,
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          prefixIcon: Icon(icon, color: primary),
+          prefixIcon: Icon(icon, color: AppTheme.primary),
           filled: true,
-          fillColor: _isEditing ? Colors.white : const Color(0xFFF9FBFF),
+          fillColor: _isEditing ? Colors.white : AppTheme.background,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide(color: Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(color: Colors.grey.shade200),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(color: primary, width: 1.4),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: AppTheme.primary, width: 2),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 18,
+            vertical: 16,
           ),
         ),
       ),
@@ -1273,13 +1455,11 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
         final data = snapshot.data?.data() as Map<String, dynamic>? ?? {};
         _fillControllers(data);
 
-        final displayName = _nameController.text.trim().isEmpty
-            ? 'NGO Name'
-            : _nameController.text.trim();
+        final nameFromData = (data['name'] ?? '').toString();
+        final displayName = nameFromData.isEmpty ? 'NGO Name' : nameFromData;
 
-        final displayEmail = _emailController.text.trim().isEmpty
-            ? 'No email added yet'
-            : _emailController.text.trim();
+        final emailFromData = (data['email'] ?? '').toString();
+        final displayEmail = emailFromData.isEmpty ? 'No email added yet' : emailFromData;
 
         return Scaffold(
           backgroundColor: bg,
@@ -1324,196 +1504,217 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 26,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF1E88E5),
-                            Color(0xFF1565C0),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                    ClipPath(
+                      clipper: _WaveClipper(),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 26,
                         ),
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: primary.withOpacity(0.22),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              AppTheme.primary,
+                              AppTheme.primaryDark,
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            height: 86,
-                            width: 86,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.16),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.apartment_rounded,
-                              size: 42,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            displayName,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            displayEmail,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.14),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.verified_user_outlined,
-                                  color: Colors.white,
-                                  size: 18,
+                          boxShadow: AppTheme.cardShadow,
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              height: 90,
+                              width: 90,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [AppTheme.primaryLight, AppTheme.primary],
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _isEditing
-                                      ? 'Editing enabled'
-                                      : 'Real-time profile data',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 4),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.apartment_rounded,
+                                size: 42,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 14),
+                            Text(
+                              displayName,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              displayEmail,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            StreamBuilder<QuerySnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('pickup_requests')
+                                  .where('organizationId', isEqualTo: user.uid)
+                                  .snapshots(),
+                              builder: (context, reqSnapshot) {
+                                int reqs = 0;
+                                int cols = 0;
+                                if (reqSnapshot.hasData) {
+                                  reqs = reqSnapshot.data!.docs.length;
+                                  cols = reqSnapshot.data!.docs.where((d) {
+                                    final map = d.data() as Map<String, dynamic>;
+                                    return map['status'] == 'collected';
+                                  }).length;
+                                }
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _buildMiniBadge('📋 $reqs Requests'),
+                                    const SizedBox(width: 8),
+                                    _buildMiniBadge('✅ $cols Collected'),
+                                    const SizedBox(width: 8),
+                                    _buildMiniBadge('📅 2024'),
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 32),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 22),
-                    _buildField(
-                      label: 'NGO Name',
-                      hint: 'Enter NGO name',
-                      controller: _nameController,
-                      icon: Icons.apartment_rounded,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'NGO name is required';
-                        }
-                        return null;
-                      },
+                    _buildFieldGroup(
+                      'Contact Information',
+                      [
+                        _buildField(
+                          label: 'NGO Name',
+                          hint: 'Enter NGO name',
+                          controller: _nameController,
+                          icon: Icons.apartment_rounded,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'NGO name is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildField(
+                          label: 'Email',
+                          hint: 'Enter email',
+                          controller: _emailController,
+                          icon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        _buildField(
+                          label: 'Phone',
+                          hint: 'Enter phone number',
+                          controller: _phoneController,
+                          icon: Icons.call_outlined,
+                          keyboardType: TextInputType.phone,
+                        ),
+                      ],
                     ),
-                    _buildField(
-                      label: 'Email',
-                      hint: 'Enter email',
-                      controller: _emailController,
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
+                    _buildFieldGroup(
+                      'Location details',
+                      [
+                        _buildField(
+                          label: 'Address',
+                          hint: 'Enter full address',
+                          controller: _addressController,
+                          icon: Icons.location_on_outlined,
+                          maxLines: 3,
+                        ),
+                        _buildField(
+                          label: 'Service Area',
+                          hint: 'e.g. Mirpur, Uttara, Dhanmondi',
+                          controller: _serviceAreaController,
+                          icon: Icons.map_outlined,
+                        ),
+                      ],
                     ),
-                    _buildField(
-                      label: 'Phone',
-                      hint: 'Enter phone number',
-                      controller: _phoneController,
-                      icon: Icons.call_outlined,
-                      keyboardType: TextInputType.phone,
-                    ),
-                    _buildField(
-                      label: 'Address',
-                      hint: 'Enter full address',
-                      controller: _addressController,
-                      icon: Icons.location_on_outlined,
-                      maxLines: 3,
-                    ),
-                    _buildField(
-                      label: 'Website',
-                      hint: 'Enter website',
-                      controller: _websiteController,
-                      icon: Icons.language_outlined,
-                    ),
-                    _buildField(
-                      label: 'Service Area',
-                      hint: 'e.g. Mirpur, Uttara, Dhanmondi',
-                      controller: _serviceAreaController,
-                      icon: Icons.map_outlined,
-                    ),
-                    _buildField(
-                      label: 'About NGO',
-                      hint: 'Write short description about NGO',
-                      controller: _aboutController,
-                      icon: Icons.info_outline_rounded,
-                      maxLines: 4,
+                    _buildFieldGroup(
+                      'Online presence',
+                      [
+                        _buildField(
+                          label: 'Website',
+                          hint: 'Enter website',
+                          controller: _websiteController,
+                          icon: Icons.language_outlined,
+                        ),
+                        _buildField(
+                          label: 'About NGO',
+                          hint: 'Write short description about NGO',
+                          controller: _aboutController,
+                          icon: Icons.info_outline_rounded,
+                          maxLines: 4,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton.icon(
-                        onPressed: (_isEditing && !_isSaving)
-                            ? _saveProfile
-                            : null,
-                        icon: _isSaving
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : const Icon(Icons.save_outlined),
-                        label: Text(
-                          _isSaving ? 'Saving...' : 'Save Changes',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                    if (_isEditing)
+                      Container(
+                        width: double.infinity,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppTheme.primary, AppTheme.primaryDark],
                           ),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
-                          disabledBackgroundColor: Colors.blue.shade200,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
+                        child: ElevatedButton.icon(
+                          onPressed: _isSaving ? null : _saveProfile,
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.save_rounded),
+                          label: Text(
+                            _isSaving ? 'Saving...' : 'Update Profile',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
+                    if (_isEditing) const SizedBox(height: 14),
                     SizedBox(
                       width: double.infinity,
                       height: 54,
-                      child: OutlinedButton.icon(
+                      child: ElevatedButton.icon(
                         onPressed: _logout,
                         icon: const Icon(Icons.logout_rounded),
                         label: const Text(
@@ -1523,12 +1724,13 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: primary,
-                          side: const BorderSide(color: primary),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(14),
                           ),
+                          elevation: 0,
                         ),
                       ),
                     ),
@@ -1541,55 +1743,62 @@ class _OrganizationProfileTabState extends State<_OrganizationProfileTab> {
       },
     );
   }
+
+  Widget _buildMiniBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
 }
 
 class _DashboardStatCard extends StatelessWidget {
   final String value;
   final String label;
-  final IconData icon;
+  final Color borderColor;
 
   const _DashboardStatCard({
     required this.value,
     required this.label,
-    required this.icon,
+    required this.borderColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFF1565C0);
-    const Color titleColor = Color(0xFF1D2939);
-    const Color bodyColor = Color(0xFF6B7280);
-
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(color: borderColor.withOpacity(0.18), width: 1.2),
       ),
       child: Column(
         children: [
-          Icon(icon, color: primary, size: 24),
-          const SizedBox(height: 10),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: titleColor,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textTitle,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: bodyColor, fontSize: 13),
+            style: const TextStyle(
+              color: AppTheme.textBody,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -1626,7 +1835,7 @@ class _QuickActionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -1672,62 +1881,107 @@ class _LatestFoodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFF1565C0);
-    const Color titleColor = Color(0xFF1D2939);
-    const Color bodyColor = Color(0xFF6B7280);
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      width: 200,
+      margin: const EdgeInsets.only(right: 16, bottom: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  foodName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: AppTheme.textTitle,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.accent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  quantity,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.accent,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'By $donorName',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.textBody,
+              fontSize: 12,
+            ),
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 14, color: AppTheme.warning),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  location,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textBody,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            height: 52,
-            width: 52,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F1FD),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(Icons.fastfood_outlined, color: primary),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  foodName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    color: titleColor,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  'By $donorName',
-                  style: const TextStyle(color: bodyColor, fontSize: 13.5),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '$quantity • $location',
-                  style: const TextStyle(color: bodyColor, fontSize: 13.5),
-                ),
-              ],
-            ),
-          ),
-        ],
+    );
+  }
+}
+
+class _ChipBadge extends StatelessWidget {
+  final String label;
+  final Color bgColor;
+
+  const _ChipBadge({required this.label, required this.bgColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF4A5568),
+        ),
       ),
     );
   }
@@ -1753,7 +2007,7 @@ class _NotificationPreviewCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 14,
             offset: const Offset(0, 8),
           ),
@@ -1827,7 +2081,7 @@ class _EmptyCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 14,
             offset: const Offset(0, 8),
           ),
@@ -1861,179 +2115,19 @@ class _EmptyCard extends StatelessWidget {
   }
 }
 
-class _ProfileSectionTitle extends StatelessWidget {
-  final String title;
 
-  const _ProfileSectionTitle({required this.title});
+class _WaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    path.lineTo(0, size.height - 40);
+    path.quadraticBezierTo(
+        size.width / 2, size.height, size.width, size.height - 40);
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w800,
-        color: Color(0xFF1D2939),
-      ),
-    );
-  }
-}
-
-class _ProfileInfoCard extends StatelessWidget {
-  final List<Widget> children;
-
-  const _ProfileInfoCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(children: children),
-    );
-  }
-}
-
-class _ProfileInfoTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-
-  const _ProfileInfoTile({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const Color primary = Color(0xFF1565C0);
-    const Color titleColor = Color(0xFF1D2939);
-    const Color bodyColor = Color(0xFF6B7280);
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 42,
-            width: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F1FD),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: primary, size: 21),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: titleColor,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 13.8,
-                    color: bodyColor,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfileDivider extends StatelessWidget {
-  const _ProfileDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Divider(height: 1, thickness: 1, color: Color(0xFFF1F1F1));
-  }
-}
-
-class _OrgSimpleTabWrapper extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  const _OrgSimpleTabWrapper({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const Color titleColor = Color(0xFF1D2939);
-    const Color bodyColor = Color(0xFF6B7280);
-    const Color primary = Color(0xFF1565C0);
-
-    return SafeArea(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: const Color(0xFFE8F1FD),
-                  child: Icon(icon, color: primary, size: 30),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: titleColor,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  subtitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: bodyColor,
-                    fontSize: 14.5,
-                    height: 1.6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

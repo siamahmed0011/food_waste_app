@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import 'admin_dashboard_screen.dart';
-import 'donor_dashboard_screen.dart';
-import 'organization_dashboard_screen.dart';
-import 'sign_in_screen.dart';
+import 'package:food_waste_app/features/admin/admin_dashboard_screen.dart';
+import 'package:food_waste_app/features/donor/donor_dashboard_screen.dart';
+import 'package:food_waste_app/features/organization/organization_dashboard_screen.dart';
+import 'package:food_waste_app/features/auth/sign_in_screen.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});

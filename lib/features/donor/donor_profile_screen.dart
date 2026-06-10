@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'welcome_screen.dart';
+import 'package:food_waste_app/features/auth/welcome_screen.dart';
 
 class DonorProfileScreen extends StatefulWidget {
   const DonorProfileScreen({super.key});
@@ -25,7 +25,6 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
   String? _imagePath;
 
   static const Color primaryGreen = Color(0xFF2E7D32);
-  static const Color accentGreen = Color(0xFF43A047);
   static const Color lightGreen = Color(0xFFE8F5E9);
   static const Color bgColor = Color(0xFFF4F7F6);
   static const Color titleColor = Color(0xFF1D2939);
@@ -177,11 +176,14 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withOpacity(0.9), width: 3),
+            border: Border.all(
+              color: Colors.white.withAlpha(230),
+              width: 3,
+            ),
           ),
           child: CircleAvatar(
             radius: 44,
-            backgroundColor: Colors.white.withOpacity(0.18),
+            backgroundColor: Colors.white.withAlpha(46),
             backgroundImage: imageProvider,
             child: imageProvider == null
                 ? const Icon(Icons.person, size: 46, color: Colors.white)
@@ -197,7 +199,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.10),
+                  color: Colors.black.withAlpha(26),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -215,19 +217,26 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
   }
 
   Widget _buildHeaderCard() {
+    final name = _nameController.text.trim().isEmpty
+        ? 'Donor User'
+        : _nameController.text.trim();
+    final email = _emailController.text.trim().isEmpty
+        ? 'No email added'
+        : _emailController.text.trim();
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [accentGreen, primaryGreen],
+          colors: [Color(0xFF43A047), Color(0xFF2E7D32)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: primaryGreen.withOpacity(0.22),
+            color: primaryGreen.withAlpha(56),
             blurRadius: 22,
             offset: const Offset(0, 12),
           ),
@@ -236,11 +245,9 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
       child: Column(
         children: [
           _buildProfileImage(),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Text(
-            _nameController.text.trim().isEmpty
-                ? 'Donor User'
-                : _nameController.text.trim(),
+            name,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
@@ -248,11 +255,9 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
-            _emailController.text.trim().isEmpty
-                ? 'No email added'
-                : _emailController.text.trim(),
+            email,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white70,
@@ -265,9 +270,9 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
             children: [
               Expanded(
                 child: _MiniInfoCard(
-                  icon: Icons.volunteer_activism_outlined,
-                  title: 'Role',
-                  value: 'Donor',
+                  icon: Icons.check_circle_outline,
+                  title: 'Verified Donor',
+                  value: 'Trusted',
                 ),
               ),
               const SizedBox(width: 12),
@@ -279,6 +284,24 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(31),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Text(
+              'Keep your donor profile updated so organizations can trust your donations quickly.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
           ),
         ],
       ),
@@ -298,7 +321,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -439,7 +462,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.redAccent,
-              side: BorderSide(color: Colors.redAccent.withOpacity(0.35)),
+              side: BorderSide(color: Colors.redAccent.withAlpha(89)),
               backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
@@ -627,9 +650,9 @@ class _MiniInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.14),
+        color: Colors.white.withAlpha(36),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.16)),
+        border: Border.all(color: Colors.white.withAlpha(41)),
       ),
       child: Column(
         children: [

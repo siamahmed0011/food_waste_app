@@ -23,6 +23,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController roadController = TextEditingController();
   final TextEditingController houseController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
+  final TextEditingController regNoController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController =
       TextEditingController();
@@ -42,6 +43,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
   ];
 
   bool get isOrg => widget.role.toLowerCase() == "ngo";
+  bool get isPhoneUser => FirebaseAuth.instance.currentUser?.phoneNumber != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.phoneNumber != null) {
+      phoneController.text = user.phoneNumber!;
+    }
+  }
 
   @override
   void dispose() {
@@ -56,6 +67,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     addressController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+    regNoController.dispose();
     super.dispose();
   }
 
@@ -67,20 +79,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
-      final userCredential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
+      String uid;
+      String email = emailController.text.trim();
 
-      final uid = userCredential.user!.uid;
+      if (isPhoneUser) {
+        // Already authenticated via Phone, use the existing Firebase User UID
+        uid = FirebaseAuth.instance.currentUser!.uid;
+      } else {
+        // Create new user with email and password
+        final userCredential =
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: passwordController.text.trim(),
+        );
+        uid = userCredential.user!.uid;
+      }
 
       if (widget.role == "donor") {
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
           'role': 'donor',
           'name': nameController.text.trim(),
           'phone': phoneController.text.trim(),
-          'email': emailController.text.trim(),
+          'email': email,
           'district': districtController.text.trim(),
           'city': cityController.text.trim(),
           'roadNo': roadController.text.trim(),
@@ -96,9 +116,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
           'organizationName': nameController.text.trim(),
           'ownerName': ownerController.text.trim(),
           'phone': phoneController.text.trim(),
-          'email': emailController.text.trim(),
+          'email': email,
           'organizationType': selectedOrganizationType ?? '',
           'address': addressController.text.trim(),
+          'regNo': regNoController.text.trim(),
+          'isVerified': false,
+          'verificationStatus': 'pending',
           'createdAt': Timestamp.now(),
         });
 
@@ -226,6 +249,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     IconData? prefixIcon,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,6 +259,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           controller: controller,
           obscureText: obscure,
           keyboardType: keyboardType,
+          enabled: enabled,
           decoration: _inputDecoration(
             hint,
             suffixIcon: suffixIcon,
@@ -397,16 +422,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 hint: '+8801XXXXXXXXX',
                                 prefixIcon: Icons.phone_outlined,
                                 keyboardType: TextInputType.phone,
+                                enabled: !isPhoneUser,
                               ),
                               const SizedBox(height: 16),
                               _buildTextField(
                                 label: 'Email Address',
                                 controller: emailController,
                                 hint: 'Enter your email',
-                                requiredField: true,
+                                requiredField: !isPhoneUser,
                                 prefixIcon: Icons.mail_outline_rounded,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
+                                  if (isPhoneUser && (value == null || value.isEmpty)) {
+                                    return null;
+                                  }
                                   if (value == null || value.isEmpty) {
                                     return 'Please enter email';
                                   }
@@ -440,13 +469,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 ),
                               ),
                               const SizedBox(height: 16),
-                              _buildTextField(
-                                label: 'Address',
-                                controller: addressController,
-                                hint: 'Area, City, District',
-                                prefixIcon: Icons.location_on_outlined,
-                              ),
-                            ] else ...[
+                               _buildTextField(
+                                 label: 'Address',
+                                 controller: addressController,
+                                 hint: 'Area, City, District',
+                                 prefixIcon: Icons.location_on_outlined,
+                               ),
+                               const SizedBox(height: 16),
+                               _buildTextField(
+                                 label: 'Govt. Registration Number / License Code',
+                                 controller: regNoController,
+                                 hint: 'e.g. Reg-123456',
+                                 requiredField: true,
+                                 prefixIcon: Icons.badge_outlined,
+                                 validator: (value) {
+                                   if (value == null || value.isEmpty) {
+                                     return 'Please enter registration number';
+                                   }
+                                   return null;
+                                 },
+                               ),
+                             ] else ...[
                               _buildTextField(
                                 label: 'Donor Name',
                                 controller: nameController,
@@ -467,16 +510,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 hint: '+8801XXXXXXXXX',
                                 prefixIcon: Icons.phone_outlined,
                                 keyboardType: TextInputType.phone,
+                                enabled: !isPhoneUser,
                               ),
                               const SizedBox(height: 16),
                               _buildTextField(
                                 label: 'Email Address',
                                 controller: emailController,
                                 hint: 'Enter your email',
-                                requiredField: true,
+                                requiredField: !isPhoneUser,
                                 prefixIcon: Icons.mail_outline_rounded,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
+                                  if (isPhoneUser && (value == null || value.isEmpty)) {
+                                    return null;
+                                  }
                                   if (value == null || value.isEmpty) {
                                     return 'Please enter email';
                                   }
@@ -516,70 +563,71 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ),
                             ],
 
-                            const SizedBox(height: 16),
-
-                            _buildTextField(
-                              label: 'Password',
-                              controller: passwordController,
-                              hint: 'Enter password',
-                              requiredField: true,
-                              obscure: obscurePassword,
-                              prefixIcon: Icons.lock_outline_rounded,
-                              suffixIcon: IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    obscurePassword = !obscurePassword;
-                                  });
-                                },
-                                icon: Icon(
-                                  obscurePassword
-                                      ? Icons.visibility_off_rounded
-                                      : Icons.visibility_rounded,
-                                  color: bodyColor,
+                            if (!isPhoneUser) ...[
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                label: 'Password',
+                                controller: passwordController,
+                                hint: 'Enter password',
+                                requiredField: true,
+                                obscure: obscurePassword,
+                                prefixIcon: Icons.lock_outline_rounded,
+                                suffixIcon: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      obscurePassword = !obscurePassword;
+                                    });
+                                  },
+                                  icon: Icon(
+                                    obscurePassword
+                                        ? Icons.visibility_off_rounded
+                                        : Icons.visibility_rounded,
+                                    color: bodyColor,
+                                  ),
                                 ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter password';
-                                }
-                                if (value.length < 6) {
-                                  return 'Minimum 6 characters';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              label: 'Confirm Password',
-                              controller: confirmPasswordController,
-                              hint: 'Confirm password',
-                              requiredField: true,
-                              obscure: obscureConfirmPassword,
-                              prefixIcon: Icons.lock_reset_rounded,
-                              suffixIcon: IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    obscureConfirmPassword =
-                                        !obscureConfirmPassword;
-                                  });
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter password';
+                                  }
+                                  if (value.length < 6) {
+                                    return 'Minimum 6 characters';
+                                  }
+                                  return null;
                                 },
-                                icon: Icon(
-                                  obscureConfirmPassword
-                                      ? Icons.visibility_off_rounded
-                                      : Icons.visibility_rounded,
-                                  color: bodyColor,
-                                ),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please confirm password';
-                                }
-                                if (value != passwordController.text) {
-                                  return 'Password does not match';
-                                }
-                                return null;
-                              },
-                            ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                label: 'Confirm Password',
+                                controller: confirmPasswordController,
+                                hint: 'Confirm password',
+                                requiredField: true,
+                                obscure: obscureConfirmPassword,
+                                prefixIcon: Icons.lock_reset_rounded,
+                                suffixIcon: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      obscureConfirmPassword =
+                                          !obscureConfirmPassword;
+                                    });
+                                  },
+                                  icon: Icon(
+                                    obscureConfirmPassword
+                                        ? Icons.visibility_off_rounded
+                                        : Icons.visibility_rounded,
+                                    color: bodyColor,
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please confirm password';
+                                  }
+                                  if (value != passwordController.text) {
+                                    return 'Password does not match';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
 
                             const SizedBox(height: 20),
 

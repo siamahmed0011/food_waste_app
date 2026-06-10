@@ -2,10 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'welcome_screen.dart';
-import 'admin_dashboard_screen.dart';
-import 'donor_dashboard_screen.dart';
-import 'organization_dashboard_screen.dart';
+import 'package:food_waste_app/features/auth/welcome_screen.dart';
+import 'package:food_waste_app/features/admin/admin_dashboard_screen.dart';
+import 'package:food_waste_app/features/donor/donor_dashboard_screen.dart';
+import 'package:food_waste_app/features/organization/organization_dashboard_screen.dart';
 
 class AppEntryScreen extends StatelessWidget {
   const AppEntryScreen({super.key});
